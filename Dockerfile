@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5000
 
 # 啟動 Flask 應用
-CMD ["python", "app.py"]
+CMD ["/env/bin/gunicorn", "app:app", "-b", "0.0.0.0:5000"]
