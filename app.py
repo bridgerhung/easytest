@@ -84,4 +84,4 @@ if __name__ == '__main__':
     # 啟動清理任務
     cleanup_thread = Thread(target=cleanup_task, daemon=True)
     cleanup_thread.start()
-    app.run()
+    app.run(host='0.0.0.0', port=5000, debug=True)
