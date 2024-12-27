@@ -61,8 +61,8 @@
   </head>
   <body>
     <div class="container">
-      <h1>EasyTest 轉 Excel 服務</h1>
-      <p>上傳您的 CSV 檔案，我們將為您轉換為 Excel 檔案！</p>
+      <h1>歡迎使用名琮的<br />EasyTest 轉 Excel 服務</h1>
+      <p>上傳您的 CSV 檔案，我將為您轉換為 Excel 檔案！</p>
       <form
         class="upload-form"
         action="/upload"
@@ -74,7 +74,12 @@
       </form>
       <div class="footer">
         <p>Supported formats: .csv</p>
-        <p>&copy; Bridger Hung</p>
+
+        <script>
+          document.querySelector(
+            ".footer p"
+          ).textContent = `© ${new Date().getFullYear()} Bridger Hung`;
+        </script>
       </div>
     </div>
   </body>
