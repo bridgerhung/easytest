@@ -10,6 +10,11 @@ COPY requirements.txt requirements.txt
 # 安裝 Python 依賴
 RUN pip install --no-cache-dir -r requirements.txt
 
+
+# 使用 Gunicorn 啟動應用
+RUN pip install gunicorn
+
+
 # 複製應用代碼到容器
 COPY . .
 
@@ -17,4 +22,4 @@ COPY . .
 EXPOSE 5000
 
 # 啟動 Flask 應用
-CMD ["python", "app.py"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
