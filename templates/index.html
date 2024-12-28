@@ -163,11 +163,12 @@
   </head>
   <body>
     <div class="container">
-      <h1>EasyTest & MyET 分數計算服務</h1>
+      <h1>EasyTest & MyET 分數合併計算服務</h1>
       <p>
-        請上傳 <strong>MyET 的 xlsx 檔案</strong> 或者
-        <strong>EasyTest 的 csv 檔</strong>，<br />本系統將為您計算成績並轉換為
-        Excel 檔案。
+        請上傳 <strong>MyET 的 xlsx 檔案</strong> 以及
+        <strong>EasyTest 的 csv 檔</strong
+        >，<br />本系統將為您自動計算成績並轉換為 Excel 檔案。
+        已升級為全自動合併服務，無需再手動輸入和匹配EasyTest成績。
       </p>
       <p>
         請注意，將資料貼到其他試算表時記得選擇<br />
@@ -175,21 +176,26 @@
         否則轉移到其他電腦時可能會發生錯誤。
       </p>
       <p>分數配置為雙平台各 5%<br />如有任何問題，請聯絡名琮。</p>
-      <p>請搭配本試算表使用，合併成績更快速。</p>
+      <!-- <p>請搭配本試算表使用，合併成績更快速。</p>
       <a
         href="https://drive.usercontent.google.com/u/0/uc?id=1VaR6g_VXdjKOZrMaBKsT8h38icu2JSYl&export=download"
         target="_blank"
         >下載試算表</a
       >
       <a href="https://youtu.be/c81qnYrkcTc" target="_blank">使用教學影片</a>
-      <p></p>
+      <p></p> -->
       <form
         class="upload-form"
         action="/upload"
         method="post"
         enctype="multipart/form-data"
       >
-        <input type="file" name="file" accept=".csv,.xlsx" required />
+        <label for="history_file">上傳 EasyTest:</label>
+        <input type="file" name="history_file" accept=".csv" required />
+
+        <label for="online_info_file">上傳 MyET:</label>
+        <input type="file" name="online_info_file" accept=".xlsx" required />
+
         <button type="submit">開始轉換</button>
       </form>
       <p>Supported formats: .csv, .xlsx</p>
@@ -197,7 +203,7 @@
         <script>
           document.querySelector(
             ".footer"
-          ).innerHTML = `© ${new Date().getFullYear()} Bridger Hung`;
+          ).innerHTML = `© ${new Date().getFullYear()} <a href="https://github.com/bridgerhung/easytest">Bridger Hung</a>`;
         </script>
       </div>
       <div class="images">
