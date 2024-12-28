@@ -4,6 +4,7 @@ from threading import Thread
 from flask import Flask, request, send_file, render_template
 import pandas as pd
 from datetime import datetime, timedelta
+from openpyxl import load_workbook
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -48,37 +49,103 @@ def upload_file():
     if file.filename == '':
         return "No file selected", 400
 
-    input_path = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(input_path)
+    if file.filename.lower().endswith('.xlsx'):
+        input_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(input_path)
+        name, ext = os.path.splitext(file.filename)
+        output_filename = f"{name}-count{ext}"
+        output_path = os.path.join(RESULT_FOLDER, output_filename)
+        wb = load_workbook(input_path)
+        ws = wb.active
 
-    output_filename = file.filename.replace('.csv', '.xlsx')
-    output_path = os.path.join(RESULT_FOLDER, output_filename)
+        # 秒數欄位 E
+        ws["E2"] = "秒數"
+        max_row = ws.max_row
+        for i in range(3, max_row + 1):
+            c_cell = f"C{i}"
+            e_cell = f"E{i}"
+            formula_e = '=IFERROR(LEFT({},FIND("天",{})-1)*86400,0) + IFERROR(MID({},FIND("天",{})+2,FIND("小時",{})-FIND("天",{})-2)*3600,0) + IFERROR(MID({},FIND("小時",{})+2,FIND("分",{})-FIND("小時",{})-2)*60,0) + IFERROR(MID({},FIND("分",{})+2,FIND("秒",{})-FIND("分",{})-2),0)'.format(
+                c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell
+            )
+            ws[e_cell] = formula_e
 
-    try:
-        # 嘗試讀取 CSV 文件
-        try:
-            df = pd.read_csv(input_path, encoding='utf-8')  # 預設嘗試 UTF-8
-        except UnicodeDecodeError:
-            try:
-                df = pd.read_csv(input_path, encoding='big5')  # 嘗試 Big5
-            except UnicodeDecodeError:
-                df = pd.read_csv(input_path, encoding='ISO-8859-1')  # 最後嘗試 ISO-8859-1
-        # 設置 "總時數" 為文字
-        if '總時數' in df.columns:
-            df['總時數'] = df['總時數'].astype(str)
+        # 分數欄位 F
+        ws["F2"] = "分數"
+        for i in range(3, max_row + 1):
+            e_cell = f"E{i}"
+            f_cell = f"F{i}"
+            formula_f = '=IF({}>=43200, 5, ROUND({}/43200*5, 2))'.format(e_cell, e_cell)
+            ws[f_cell] = formula_f
 
-        # 刪除 "登入次數"
-        if '登入次數' in df.columns:
-            df = df.drop(columns=['登入次數'])
+        # 時分欄位 G
+        ws["G2"] = "時分"
+        for i in range(3, max_row + 1):
+            e_cell = f"E{i}"
+            g_cell = f"G{i}"
+            formula_g = '=TEXT(INT({}/3600),"00")&"時"&TEXT(INT(MOD({},3600)/60),"00")&"分"'.format(e_cell, e_cell)
+            ws[g_cell] = formula_g
 
-        # 將結果儲存為 XLSX
-        df.to_excel(output_path, index=False)
-
-    except Exception as e:
-        return f"Error processing file: {e}", 500
-
-    return send_file(output_path, as_attachment=True)
+        wb.save(output_path)
+        return send_file(output_path, as_attachment=True)
+        
     
+        
+    else:
+        # 處理 CSV 檔
+        input_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(input_path)
+        name, ext = os.path.splitext(file.filename)
+        output_filename = f"{name}-count.xlsx"
+        output_path = os.path.join(RESULT_FOLDER, output_filename)
+
+        try:
+            # 嘗試讀取 CSV 文件
+            try:
+                df = pd.read_csv(input_path, encoding='utf-8')  # 預設嘗試 UTF-8
+            except UnicodeDecodeError:
+                try:
+                    df = pd.read_csv(input_path, encoding='big5')  # 嘗試 Big5
+                except UnicodeDecodeError:
+                    df = pd.read_csv(input_path, encoding='ISO-8859-1')  # 最後嘗試 ISO-8859-1
+            # 設置 "總時數" 為文字
+            if '總時數' in df.columns:
+                df['總時數'] = df['總時數'].astype(str)
+
+            # 刪除 "登入次數"
+            if '登入次數' in df.columns:
+                df = df.drop(columns=['登入次數'])
+
+            # 將結果儲存為 XLSX
+            df.to_excel(output_path, index=False)
+
+            # 加載工作簿並添加公式
+            wb = load_workbook(output_path)
+            ws = wb.active
+
+            # 秒數欄位
+            ws["D1"] = "秒數"
+            for i in range(2, len(df) + 2):
+                c_cell = f"C{i}"
+                d_cell = f"D{i}"
+                formula_d = '=IFERROR(LEFT({},FIND("時",{})-1)*3600,0) + IFERROR(MID({},FIND("時",{})+1,FIND("分",{})-FIND("時",{})-1)*60,0)'.format(
+                    c_cell, c_cell, c_cell, c_cell, c_cell, c_cell
+                )
+                ws[d_cell] = formula_d
+
+            # 分數欄位
+            ws["E1"] = "分數"
+            for i in range(2, len(df) + 2):
+                d_cell = f"D{i}"
+                e_cell = f"E{i}"
+                formula_e = '=IF({}>=43200, 5, ROUND({}/43200*5, 2))'.format(d_cell, d_cell)
+                ws[e_cell] = formula_e
+
+            wb.save(output_path)
+
+        except Exception as e:
+            return f"Error processing file: {e}", 500
+
+        return send_file(output_path, as_attachment=True)
 
 if __name__ == '__main__':
     # 啟動清理任務

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EasyTest 轉 Excel 服務</title>
+    <title>EasyTest & MyET 分數計算服務</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -57,24 +57,31 @@
         font-size: 12px;
         color: #888;
       }
+      p {
+        line-height: 1;
+        margin-bottom: 0.5em;
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>歡迎使用名琮的<br />EasyTest 轉 Excel 服務</h1>
-      <p>上傳您的 CSV 檔案，我將為您轉換為 Excel 檔案！</p>
+      <h1>歡迎使用名琮的<br />EasyTest & MyET 分數計算服務</h1>
+      <p>請上傳MyET 的 xlsx 檔案，它為你計算成績</p>
+      <p>或者上傳EasyTest 的 csv檔，他將為你計算成績，並轉換成Excel 檔案</p>
+      <p>請注意，上傳的檔案不會被儲存，請放心使用</p>
+      <p>分數配置為雙平台各5%</p>
+      <p>如有任何問題，請聯絡名琮</p>
       <form
         class="upload-form"
         action="/upload"
         method="post"
         enctype="multipart/form-data"
       >
-        <input type="file" name="file" accept=".csv" required />
+        <input type="file" name="file" accept=".csv,.xlsx" required />
         <button type="submit">開始轉換</button>
       </form>
+      <p>Supported formats: .csv, .xlsx</p>
       <div class="footer">
-        <p>Supported formats: .csv</p>
-
         <script>
           document.querySelector(
             ".footer p"
