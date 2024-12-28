@@ -6,27 +6,39 @@
     <title>EasyTest & MyET 分數計算服務</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        background: #f4f4f9;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #ece9e6, #ffffff);
         margin: 0;
         padding: 0;
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
+        min-height: 100vh;
       }
       .container {
         text-align: center;
-        background: white;
-        padding: 20px 30px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        max-width: 400px;
-        width: 100%;
+        background: #ffffff;
+        padding: 30px 40px;
+        border-radius: 15px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        max-width: 450px;
+        width: 90%;
+        animation: fadeIn 1s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
       h1 {
-        color: #333;
-        margin-bottom: 20px;
+        color: #4a90e2;
+        margin-bottom: 25px;
+        font-size: 24px;
       }
       .upload-form {
         display: flex;
@@ -35,42 +47,143 @@
       }
       input[type="file"] {
         margin-bottom: 20px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
+        padding: 12px;
+        border: 2px dashed #4a90e2;
+        border-radius: 10px;
         width: 100%;
+        transition: border-color 0.3s;
+        cursor: pointer;
+      }
+      input[type="file"]:hover {
+        border-color: #357abd;
       }
       button {
-        background: #4caf50;
+        background: #4a90e2;
         color: white;
-        padding: 10px 20px;
+        padding: 12px 25px;
         border: none;
-        border-radius: 5px;
+        border-radius: 8px;
         cursor: pointer;
         font-size: 16px;
+        transition: background 0.3s, transform 0.2s;
       }
       button:hover {
-        background: #45a049;
+        background: #357abd;
+        transform: scale(1.05);
       }
       .footer {
-        margin-top: 20px;
-        font-size: 12px;
-        color: #888;
+        margin-top: 25px;
+        font-size: 14px;
+        color: #aaa;
       }
       p {
         line-height: 1;
         margin-bottom: 0.5em;
+        color: #555;
+      }
+      .highlight {
+        color: #e74c3c;
+        font-weight: bold;
+        font-size: 18px;
+      }
+      .images {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 20px;
+      }
+      .images img {
+        width: 80px;
+        height: auto;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s;
+        cursor: pointer;
+      }
+      .images img:hover {
+        transform: scale(1.1);
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        padding-top: 60px; /* Location of the box */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgba(0, 0, 0, 0.8); /* Black w/ opacity */
+      }
+      .modal-content {
+        margin: auto;
+        display: block;
+        width: 80%;
+        max-width: 300px;
+        border-radius: 10px;
+      }
+      .modal-content,
+      #caption {
+        animation-name: zoom;
+        animation-duration: 0.6s;
+      }
+      @keyframes zoom {
+        from {
+          transform: scale(0);
+        }
+        to {
+          transform: scale(1);
+        }
+      }
+      /* Close Button */
+      .close {
+        position: absolute;
+        top: 30px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        transition: color 0.3s;
+        cursor: pointer;
+      }
+      .close:hover,
+      .close:focus {
+        color: #bbb;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      @media (max-width: 700px) {
+        .modal-content {
+          width: 100%;
+        }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>歡迎使用名琮的<br />EasyTest & MyET 分數計算服務</h1>
-      <p>請上傳MyET 的 xlsx 檔案，它為你計算成績</p>
-      <p>或者上傳EasyTest 的 csv檔，他將為你計算成績，並轉換成Excel 檔案</p>
-      <p>請注意，上傳的檔案不會被儲存，請放心使用</p>
-      <p>分數配置為雙平台各5%</p>
-      <p>如有任何問題，請聯絡名琮</p>
+      <h1>EasyTest & MyET 分數計算服務</h1>
+      <p>
+        請上傳 <strong>MyET 的 xlsx 檔案</strong> 或者
+        <strong>EasyTest 的 csv 檔</strong>，<br />本系統將為您計算成績並轉換為
+        Excel 檔案。
+      </p>
+      <p>
+        請注意，將資料貼到其他試算表時記得選擇<br />
+        <span class="highlight">僅貼上值</span><br />
+        否則轉移到其他電腦時可能會發生錯誤。
+      </p>
+      <p>分數配置為雙平台各 5%<br />如有任何問題，請聯絡名琮。</p>
+      <p>
+        請搭配本試算表使用，合併成績更快速。<a
+          href="https://drive.usercontent.google.com/u/0/uc?id=1VaR6g_VXdjKOZrMaBKsT8h38icu2JSYl&export=download"
+          target="_blank"
+          >下載試算表</a
+        >
+      </p>
+      <a href="https://youtu.be/c81qnYrkcTc" target="_blank">使用教學影片</a>
+      <p></p>
       <form
         class="upload-form"
         action="/upload"
@@ -84,10 +197,56 @@
       <div class="footer">
         <script>
           document.querySelector(
-            ".footer p"
-          ).textContent = `© ${new Date().getFullYear()} Bridger Hung`;
+            ".footer"
+          ).innerHTML = `© ${new Date().getFullYear()} Bridger Hung`;
         </script>
       </div>
+      <div class="images">
+        <img
+          src="https://i.imgur.com/SaRsSDo.png"
+          alt="貼上值"
+          onclick="openModal(this.src, this.alt)"
+        />
+        <img
+          src="https://i.imgur.com/RWvWTmk.png"
+          alt="操作示意"
+          onclick="openModal(this.src, this.alt)"
+        />
+      </div>
     </div>
+
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <img class="modal-content" id="img01" />
+      <div
+        id="caption"
+        style="color: #ccc; text-align: center; padding-top: 10px"
+      ></div>
+    </div>
+
+    <script>
+      function openModal(src, alt) {
+        var modal = document.getElementById("myModal");
+        var modalImg = document.getElementById("img01");
+        var captionText = document.getElementById("caption");
+        modal.style.display = "block";
+        modalImg.src = src;
+        captionText.innerHTML = alt;
+      }
+
+      function closeModal() {
+        var modal = document.getElementById("myModal");
+        modal.style.display = "none";
+      }
+
+      // Close the modal when clicking outside the image
+      window.onclick = function (event) {
+        var modal = document.getElementById("myModal");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+    </script>
   </body>
 </html>
