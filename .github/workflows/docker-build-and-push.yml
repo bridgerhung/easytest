@@ -27,5 +27,5 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/myimage:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/easytest:latest
           context: .
