@@ -12,11 +12,6 @@
       sizes="32x32"
       href="/static/favicon-32x32.png"
     />
-    <!-- Font Awesome for icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-    />
     <!-- Google tag (gtag.js) -->
     <script
       async
@@ -31,8 +26,7 @@
 
       gtag("config", "G-6DQ663S55E");
     </script>
-    <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="EasyTest & MyET 分數秒數合併計算服務" />
+    <meta property="og:title" content="EasyTest & MyET 分數合併計算服務" />
     <meta
       property="og:description"
       content="請同時上傳 MyET 的 xlsx 檔案 以及 EasyTest 的 csv 檔案。已升級為全自動合併服務"
@@ -40,21 +34,33 @@
     <meta property="og:image" content="/static/logo.png" />
     <meta property="og:url" content="https://csv.brid.pw" />
     <meta property="og:type" content="website" />
-    <link rel="stylesheet" href="static/css/styles.css" />
+    <style></style>
+
+    <!-- Add Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+    <link rel="stylesheet" href="static/css/new.css" />
   </head>
   <body>
     <div class="container">
       <div class="card">
         <div class="header">
-          <img src="static/logo.png" alt="Logo" class="logo" />
-          <h1>EasyTest & MyET 分數合併計算服務</h1>
+          <img src="static/logo1.png" alt="Logo" class="logo" />
+          <div class="title-group">
+            <h1>EasyTest & MyET 分數合併計算服務</h1>
+          </div>
+          <a href="/" class="home-btn">
+            <i class="fas fa-home"></i>
+          </a>
         </div>
 
         <div class="upload-section">
           <p>
             請同時上傳 <strong>MyET 的 xlsx 檔案</strong> 以及
             <strong>EasyTest 的 csv 檔</strong>
-            <br />本系統將為您自動計算成績、秒數、小時分鐘並轉換為 Excel 檔案。
+            <br />本系統將為您自動計算成績並轉換為 Excel 檔案。
           </p>
           <p>已升級為全自動合併服務，無需再手動輸入和匹配EasyTest成績。</p>
         </div>
@@ -111,30 +117,43 @@
         </form>
       </div>
 
-      <div class="image-container">
-        <img src="static/SaRsSDo.png" alt="貼上值" class="enlargeable" />
-        <img src="static/RWvWTmk.png" alt="操作示意" class="enlargeable" />
-      </div>
-
-      <div class="footer">
-        <p>
-          © <span id="year"></span>
-          <a href="https://github.com/bridgerhung/easytest" target="_blank"
-            >Bridger Hung</a
-          >
-          <a href="#" onclick="openDisclaimer(event)">免責聲明</a>
-          <a href="http://brid.pw/mailme" target="_blank">與我聯絡</a>
-        </p>
-      </div>
+      <!-- Replace existing footer with standardized version -->
+      <footer class="footer">
+        <div class="footer-content">
+          <p class="copyright">© <span id="year"></span> Bridger Hung</p>
+          <div class="footer-links">
+            <a href="https://github.com/bridgerhung/easytest" target="_blank">
+              <i class="fab fa-github"></i> GitHub
+            </a>
+            <a href="#" onclick="openDisclaimer(event)">
+              <i class="fas fa-shield-alt"></i> 免責聲明
+            </a>
+            <a href="http://brid.pw/mailme" target="_blank">
+              <i class="fas fa-envelope"></i> 與我聯絡
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
 
-    <!-- Image Modal -->
-    <div id="imageModal" class="image-modal">
-      <span class="close" onclick="closeImageModal()">&times;</span>
-      <img class="modal-content" id="modalImage" alt="Enlarged Image" />
+    <div class="images">
+      <img
+        src="static/SaRsSDo.png"
+        alt="貼上值"
+        onclick="openModal(this.src, this.alt)"
+      />
+      <img
+        src="static/RWvWTmk.png"
+        alt="操作示意"
+        onclick="openModal(this.src, this.alt)"
+      />
     </div>
 
-    <!-- Disclaimer Modal -->
+    <div id="myModal" class="modal">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <img class="modal-content" id="img01" />
+    </div>
+
     <div id="disclaimerModal" class="disclaimer-modal">
       <div class="disclaimer-content">
         <span class="close" onclick="closeDisclaimer()">&times;</span>
@@ -144,7 +163,6 @@
         <p>本服務不儲存您上傳的資料和計算結果。</p>
       </div>
     </div>
-
-    <script src="static/js/main.js"></script>
+    <script src="static/js/new.js"></script>
   </body>
 </html>

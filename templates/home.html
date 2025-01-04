@@ -49,56 +49,58 @@
   </head>
   <body>
     <div class="container">
-      <div class="card">
-        <h1>
+      <!-- Hero Section -->
+      <div class="hero card">
+        <div class="hero-content">
           <img src="/static/logo.png" alt="favicon" class="logo" />
-          EasyTest & MyET 分數、秒數、時數計算服務
-        </h1>
-
-        <div class="description">
-          <p>
-            <i class="fas fa-sync-alt"></i> 雙平台同時計算：適用於需要同時計算
-            EasyTest 和 MyET 兩個平台成績、秒數、時數的情況
-          </p>
-          <p>
-            <i class="fas fa-clock"></i>
-            計算單個平台：適用於只需計算單一平台成績、秒數、時數的情況
-          </p>
+          <h1>EasyTest & MyET 分數計算服務</h1>
+          <p class="subtitle">快速計算成績、秒數、時數的整合工具</p>
         </div>
+      </div>
 
-        <div class="button-container">
-          <a href="/new" class="btn">
+      <!-- Features Section -->
+      <div class="features">
+        <div class="feature-card">
+          <i class="fas fa-sync-alt feature-icon"></i>
+          <h3>雙平台同時計算</h3>
+          <p>同時處理 EasyTest 和 MyET 兩個平台的資料，一次完成所有計算</p>
+          <a href="/new" class="btn primary-btn">
             <i class="fas fa-exchange-alt"></i>
-            雙平台同時計算
+            開始使用
           </a>
-          <a href="/legacy" class="btn">
+        </div>
+
+        <div class="feature-card">
+          <i class="fas fa-calculator feature-icon"></i>
+          <h3>單一平台計算</h3>
+          <p>只需計算單一平台的成績、秒數、時數，更快速完成工作</p>
+          <a href="/legacy" class="btn secondary-btn">
             <i class="fas fa-calculator"></i>
-            計算單個平台
+            開始使用
           </a>
         </div>
       </div>
 
-      <div class="image-container">
-        <img src="static/RWvWTmk.png" alt="示範圖片 1" class="enlargeable" />
-        <img src="static/SaRsSDo.png" alt="示範圖片 2" class="enlargeable" />
-      </div>
-
-      <div class="footer">
-        <p>
-          © <span id="year"></span>
-          <a href="https://github.com/bridgerhung/easytest" target="_blank">
-            <i class="fab fa-github"></i> Bridger Hung
-          </a>
-          <a href="#" onclick="openDisclaimer(event)">
-            <i class="fas fa-shield-alt"></i> 免責聲明
-          </a>
-          <a href="http://brid.pw/mailme" target="_blank">
-            <i class="fas fa-envelope"></i> 與我聯絡
-          </a>
-        </p>
-      </div>
+      <!-- Footer -->
+      <footer class="footer">
+        <div class="footer-content">
+          <p class="copyright">© <span id="year"></span> Bridger Hung</p>
+          <div class="footer-links">
+            <a href="https://github.com/bridgerhung/easytest" target="_blank">
+              <i class="fab fa-github"></i> GitHub
+            </a>
+            <a href="#" onclick="openDisclaimer(event)">
+              <i class="fas fa-shield-alt"></i> 免責聲明
+            </a>
+            <a href="http://brid.pw/mailme" target="_blank">
+              <i class="fas fa-envelope"></i> 與我聯絡
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
 
+    <!-- Keep existing modals -->
     <div id="disclaimerModal" class="disclaimer-modal">
       <div class="disclaimer-content">
         <span class="close" onclick="closeDisclaimer()">&times;</span>
@@ -109,12 +111,11 @@
       </div>
     </div>
 
-    <!-- Image Modal -->
     <div id="imageModal" class="image-modal">
       <span class="close" onclick="closeImageModal()">&times;</span>
       <img class="modal-content" id="modalImage" alt="Enlarged Image" />
     </div>
 
-    <script src="static/js/main.js"></script>
+    <script src="static/js/home.js"></script>
   </body>
 </html>
