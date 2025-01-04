@@ -4,10 +4,6 @@
   --success: #4caf50;
   --background: #f5f7fa;
   --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  --primary-color: #4a90e2;
-  --primary-light: #64b5f6;
-  --text-color: #2d3436;
-  --border-radius: 8px;
 }
 
 * {
@@ -42,10 +38,6 @@ body {
 .header {
   text-align: center;
   margin-bottom: 3rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2rem;
 }
 
 .logo {
@@ -62,10 +54,13 @@ h1 {
 }
 
 .upload-zone {
-  transition: all 0.3s ease;
-  border: 2px dashed #ccc;
-  padding: 2rem;
+  border: 2px dashed var(--primary);
+  border-radius: 10px;
+  padding: 3rem 2rem;
   text-align: center;
+  margin: 2rem 0;
+  background: #fafafa;
+  transition: all 0.3s ease;
   cursor: pointer;
 }
 
@@ -76,9 +71,8 @@ h1 {
 }
 
 .upload-zone.dragover {
-  border-color: #4a90e2;
-  background-color: rgba(74, 144, 226, 0.1);
-  transform: scale(1.02);
+  background: #e3f2fd;
+  border-color: var(--success);
 }
 
 .instructions {
@@ -334,29 +328,20 @@ h1 {
     gap: 1rem;
   }
 }
-
-/* Add new styles for title group and home button */
-.title-group {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
 .home-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--primary-color);
-  color: white;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: rgb(136, 235, 221);
+  color: rgb(255, 255, 255);
   text-decoration: none;
   border-radius: var(--border-radius);
-  font-size: 0.9rem;
+  font-size: 1.5rem;
   transition: all 0.3s ease;
 }
 
 .home-btn:hover {
   background: var(--primary-light);
   transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
 }

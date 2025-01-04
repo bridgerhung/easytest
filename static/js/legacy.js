@@ -1,3 +1,4 @@
+document.getElementById("year").textContent = new Date().getFullYear();
 const dropZone = document.querySelector(".upload-zone");
 const fileInput = document.getElementById("fileInput");
 const imageModal = document.getElementById("imageModal");
@@ -89,7 +90,15 @@ fileInput.addEventListener("change", function (e) {
     })
       .then((response) => response.blob())
       .then((blob) => {
-        // 處理回應
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download =
+          this.files[0].name.replace(/\.[^/.]+$/, "") + "-count.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -99,12 +108,15 @@ fileInput.addEventListener("change", function (e) {
 
 // 開啟圖片模態框
 function openImageModal(src) {
+  const imageModal = document.getElementById("imageModal");
+  const modalImage = document.getElementById("modalImage");
   modalImage.src = src;
-  imageModal.style.display = "block";
+  imageModal.style.display = "flex";
 }
 
 // 關閉圖片模態框
 function closeImageModal() {
+  const imageModal = document.getElementById("imageModal");
   imageModal.style.display = "none";
 }
 
@@ -119,3 +131,32 @@ window.onclick = function (event) {
 function handleFileUpload(file) {
   // TODO: 實現檔案上傳邏輯
 }
+
+// Update footer year
+document.getElementById("year").textContent = new Date().getFullYear();
+
+/* Disclaimer Modal Functionality */
+function openDisclaimer(event) {
+  event.preventDefault();
+  const disclaimerModal = document.getElementById("disclaimerModal");
+  disclaimerModal.style.display = "flex";
+}
+
+function closeDisclaimer() {
+  const disclaimerModal = document.getElementById("disclaimerModal");
+  disclaimerModal.style.display = "none";
+}
+
+/* Close modals when clicking outside */
+window.addEventListener("click", function (event) {
+  const disclaimerModal = document.getElementById("disclaimerModal");
+  const imageModal = document.getElementById("imageModal");
+
+  if (event.target === disclaimerModal) {
+    closeDisclaimer();
+  }
+
+  if (event.target === imageModal) {
+    closeImageModal();
+  }
+});
