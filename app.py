@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, after_this_request
+from flask import Flask, render_template, request, send_file, after_this_request, redirect, url_for
 import os
 import pandas as pd
 from openpyxl import load_workbook
@@ -14,11 +14,19 @@ RESULT_FOLDER = 'results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+@app.route('/new')
+def new():
+    return render_template('new.html')
 
-@app.route('/upload', methods=['POST'])
+@app.route('/legacy')
+def legacy():
+    return render_template('legacy.html')
+
+@app.route('/')
+def homepage():
+    return render_template('home.html')
+
+@app.route('/new/upload', methods=['POST'])
 def upload_file():
     # Check if both files are present
     if 'history_file' not in request.files or 'online_info_file' not in request.files:
@@ -195,6 +203,7 @@ def upload_file():
 
     except Exception as e:
         return f"處理檔案時發生錯誤: {str(e)}", 500
+
 
 def cleanup_task():
     while True:

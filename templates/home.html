@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EasyTest & MyET 分數時數計算服務</title>
+    <link rel="icon" type="image/x-icon" href="static/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-6DQ663S55E"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-6DQ663S55E");
+    </script>
+    <meta property="og:title" content="EasyTest & MyET 秒數計算服務" />
+    <meta
+      property="og:description"
+      content="請上傳 MyET 的 xlsx 檔案 或 EasyTest 的 csv 檔案，系統會自動計算成績並轉換為 Excel 檔案"
+    />
+    <meta property="og:image" content="/static/logo.png" />
+    <meta property="og:url" content="https://csv.brid.pw" />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="static/css/styles-legacy.css" />
+    <!-- Add Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+    <link rel="stylesheet" href="static/css/home.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>
+          <i class="fas fa-calculator"></i> EasyTest & MyET 分數時數計算服務
+        </h1>
+
+        <div class="description">
+          <p>
+            <i class="fas fa-sync-alt"></i> 雙平台同時計算：適用於需要同時計算
+            EasyTest 和 MyET 兩個平台成績的情況
+          </p>
+          <p>
+            <i class="fas fa-clock"></i>
+            計算單個平台：適用於只需計算單一平台成績的情況
+          </p>
+        </div>
+
+        <div class="button-container">
+          <button class="btn" onclick="window.location.href='/new'">
+            <i class="fas fa-exchange-alt"></i>
+            雙平台同時計算
+          </button>
+          <button class="btn" onclick="window.location.href='/legacy'">
+            <i class="fas fa-calculator"></i>
+            計算單個平台
+          </button>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>
+          © <span id="year"></span>
+          <a href="https://github.com/bridgerhung/easytest" target="_blank">
+            <i class="fab fa-github"></i> Bridger Hung
+          </a>
+          <a href="#" onclick="openDisclaimer(event)">
+            <i class="fas fa-shield-alt"></i> 免責聲明
+          </a>
+          <a href="http://brid.pw/mailme" target="_blank">
+            <i class="fas fa-envelope"></i> 與我聯絡
+          </a>
+        </p>
+      </div>
+    </div>
+
+    <div id="disclaimerModal" class="disclaimer-modal">
+      <div class="disclaimer-content">
+        <span class="close" onclick="closeDisclaimer()">&times;</span>
+        <h2>免責聲明</h2>
+        <p>本人不為計算出來的成績負責，您應該負起成績的核對和計算責任，</p>
+        <p>本服務僅提供輔助。</p>
+        <p>本服務不儲存您上傳的資料和計算結果。</p>
+      </div>
+    </div>
+
+    <script src="static/js/main.js"></script>
+  </body>
+</html>
