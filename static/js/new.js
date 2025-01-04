@@ -14,10 +14,11 @@ function closeDisclaimer() {
 }
 
 /* Image Modal Functionality */
-function openImageModal(src) {
+function openImageModal(src, alt) {
   const imageModal = document.getElementById("imageModal");
   const modalImage = document.getElementById("modalImage");
   modalImage.src = src;
+  modalImage.alt = alt;
   imageModal.style.display = "flex";
 }
 
@@ -53,7 +54,7 @@ fileInput.addEventListener("change", function (e) {
     const formData = new FormData();
     formData.append("file", this.files[0]);
 
-    fetch("/legacy/upload", {
+    fetch("/new/upload", {
       method: "POST",
       body: formData,
     })
