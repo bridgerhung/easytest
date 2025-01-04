@@ -3,17 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EasyTest & MyET 秒數計算服務</title>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EasyTest & MyET 秒數計算服務</title>
+    <title>EasyTest & MyET 分數秒數計算服務</title>
     <link rel="icon" type="image/x-icon" href="static/favicon.ico" />
-    <link rel="stylesheet" href="static/css/styles-legacy.css" />
     <!-- 在 <head> 中聲明 favicon-32x32.png，提供搜尋引擎與使用者預覽 -->
     <link
       rel="icon"
       type="image/png"
-      sizes="10x10"
+      sizes="32x32"
       href="/static/favicon-32x32.png"
     />
     <!-- Google tag (gtag.js) -->
@@ -30,7 +26,7 @@
 
       gtag("config", "G-6DQ663S55E");
     </script>
-    <meta property="og:title" content="EasyTest & MyET 秒數計算服務" />
+    <meta property="og:title" content="EasyTest & MyET 分數秒數計算服務" />
     <meta
       property="og:description"
       content="請上傳 MyET 的 xlsx 檔案 或 EasyTest 的 csv 檔案，系統會自動計算成績並轉換為 Excel 檔案"
@@ -39,72 +35,106 @@
     <meta property="og:url" content="https://csv.brid.pw" />
     <meta property="og:type" content="website" />
     <link rel="stylesheet" href="static/css/styles.css" />
+    <link rel="stylesheet" href="static/css/styles-legacy.css" />
     <!-- Add Font Awesome for icons -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
     />
+    <link rel="stylesheet" href="static/css/home.css" />
   </head>
   <body>
-    <div class="card">
-      <div class="header">
-        <img src="static/logo.png" alt="Logo" class="logo" />
-        <h1>EasyTest & MyET 秒數計算服務</h1>
+    <div class="container">
+      <div class="card">
+        <div class="header">
+          <img src="static/logo.png" alt="Logo" class="logo" />
+          <h1>EasyTest & MyET 分數秒數計算服務</h1>
+        </div>
+
+        <div class="instructions">
+          <p><strong>使用說明</strong></p>
+          <ul>
+            <li>
+              💾 支援上傳 <strong>MyET 的 xlsx 檔案</strong> 或
+              <strong>EasyTest 的 csv 檔</strong>
+            </li>
+            <li>🔄 系統會自動計算秒數並轉換為 Excel 檔案</li>
+            <li>
+              📊 本系統將為您自動計算成績(5%)、秒數、小時分鐘並轉換為 Excel 檔案
+            </li>
+            <li>⚡ 處理完成後會自動下載結果檔案</li>
+          </ul>
+        </div>
+
+        <div class="upload-zone" id="dropZone">
+          <form
+            id="uploadForm"
+            action="/legacy/upload"
+            method="post"
+            enctype="multipart/form-data"
+          >
+            <img src="static/upload-icon.svg" alt="上傳" class="upload-icon" />
+            <p>點擊下方按鈕或拖放檔案至此區域</p>
+            <input
+              type="file"
+              id="fileInput"
+              name="file"
+              accept=".xlsx,.csv"
+              style="display: none"
+            />
+            <button type="button" class="btn select-btn">
+              <i class="fas fa-upload"></i> 選擇檔案
+            </button>
+            <button type="submit" class="btn submit-btn">
+              <i class="fas fa-paper-plane"></i> 上傳檔案
+            </button>
+          </form>
+        </div>
+
+        <div class="notice">
+          <span>📝</span>
+          <p>
+            提醒：將計算結果複製到其他試算表時，請使用「值貼上」以保持格式正確
+          </p>
+        </div>
       </div>
 
-      <div class="instructions">
-        <p><strong>使用說明</strong></p>
-        <ul>
-          <li>
-            💾 支援上傳 <strong>MyET 的 xlsx 檔案</strong> 或
-            <strong>EasyTest 的 csv 檔</strong>
-          </li>
-          <li>🔄 系統會自動計算秒數並轉換為 Excel 檔案</li>
-          <li>📊 本系統將為您自動計算成績(5%)、秒數、小時分鐘並轉換為 Excel 檔案</li>
-          <li>⚡ 處理完成後會自動下載結果檔案</li>
-        </ul>
+      <div class="image-container">
+        <img src="static/RWvWTmk.png" alt="示範圖片 1" class="enlargeable" />
+        <img src="static/SaRsSDo.png" alt="示範圖片 2" class="enlargeable" />
       </div>
 
-      <div class="upload-zone" id="dropZone">
-        <form id="uploadForm" action="/legacy/upload" method="post" enctype="multipart/form-data">
-          <img src="static/upload-icon.svg" alt="上傳" class="upload-icon" />
-          <p>點擊下方按鈕</p>
-          <input
-            type="file"
-            id="fileInput"
-            name="file"
-            accept=".xlsx,.csv"
-            style="display: none"
-          />
-          <button type="button" class="btn" onclick="document.getElementById('fileInput').click()">選擇檔案</button>
-        </form>
-      </div>
-
-      <div class="notice">
-        <span>📝</span>
+      <div class="footer">
         <p>
-          提醒：將計算結果複製到其他試算表時，請使用「值貼上」以保持格式正確
+          © <span id="year"></span>
+          <a href="https://github.com/bridgerhung/easytest" target="_blank">
+            <i class="fab fa-github"></i> Bridger Hung
+          </a>
+          <a href="#" onclick="openDisclaimer(event)">
+            <i class="fas fa-shield-alt"></i> 免責聲明
+          </a>
+          <a href="http://brid.pw/mailme" target="_blank">
+            <i class="fas fa-envelope"></i> 與我聯絡
+          </a>
         </p>
       </div>
     </div>
-    
-    <div class="image-container">
-      <img src="static/RWvWTmk.png" alt="示範圖片 1">
-      <img src="static/SaRsSDo.png" alt="示範圖片 2">
+
+    <div id="disclaimerModal" class="disclaimer-modal">
+      <div class="disclaimer-content">
+        <span class="close" onclick="closeDisclaimer()">&times;</span>
+        <h2>免責聲明</h2>
+        <p>本人不為計算出來的成績負責，您應該負起成績的核對和計算責任，</p>
+        <p>本服務僅提供輔助。</p>
+        <p>本服務不儲存您上傳的資料和計算結果。</p>
+      </div>
     </div>
-  </div>
-  <footer>
-    <p>© 2024 Bridger Hung</p>
-    <button class="btn" onclick="openDisclaimer()">免責聲明</button>
-  <div id="disclaimerModal" class="disclaimer-modal">
-    <div class="disclaimer-content">
-      <span class="close" onclick="closeDisclaimer()">&times;</span>
-      <h2>免責聲明</h2>
-      <p>本人不為計算出來的成績負責，您應該負起成績的核對和計算責任，</p>
-      <p>本服務僅提供輔助。</p>
-      <p>本服務不儲存您上傳的資料和計算結果。</p>
+
+    <div id="imageModal" class="image-modal">
+      <span class="close" onclick="closeImageModal()">&times;</span>
+      <img class="modal-content" id="modalImage" alt="Enlarged Image" />
     </div>
-  </div>
+
     <script src="static/js/main-legacy.js"></script>
   </body>
 </html>

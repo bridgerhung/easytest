@@ -17,7 +17,7 @@ RUN pip install gunicorn
 COPY . .
 
 # 開放 Flask 默認端口
-EXPOSE 5000 6500
+EXPOSE 5000
 
 # 啟動 Flask 應用
-CMD ["sh", "-c", "gunicorn -b 0.0.0.0:5000 app2:app & gunicorn -b 0.0.0.0:6500 app:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]

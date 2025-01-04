@@ -1,30 +1,159 @@
 from flask import Flask, render_template, request, send_file, after_this_request, redirect, url_for
 import os
+import time
 import pandas as pd
+from datetime import datetime, timedelta
+from threading import Thread
 from openpyxl import load_workbook
 from werkzeug.utils import secure_filename
-from threading import Thread
 
 app = Flask(__name__)
-
 UPLOAD_FOLDER = 'uploads'
 RESULT_FOLDER = 'results'
 
-# Ensure upload and result directories exist
+# Create directories
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
-@app.route('/new')
-def new():
-    return render_template('new.html')
+def delete_old_files(folder, age_in_seconds):
+    """Delete files older than age_in_seconds in the specified folder."""
+    now = time.time()
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        if os.path.isfile(file_path):
+            file_age = now - os.path.getmtime(file_path)
+            if file_age > age_in_seconds:
+                os.remove(file_path)
+                print(f"Deleted: {file_path}")
+
+def cleanup_task():
+    """Background cleanup task, runs every hour."""
+    while True:
+        delete_old_files(UPLOAD_FOLDER, 60)
+        delete_old_files(RESULT_FOLDER, 60)
+        time.sleep(60)
+
+@app.route('/')
+def homepage():
+    return render_template('home.html')
 
 @app.route('/legacy')
 def legacy():
     return render_template('legacy.html')
 
-@app.route('/')
-def homepage():
-    return render_template('home.html')
+@app.route('/legacy/upload', methods=['POST'])
+def legacy_upload():
+    if 'file' not in request.files:
+        return {"error": "請上傳檔案"}, 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return {"error": "未選擇檔案"}, 400
+
+    filename = secure_filename(file.filename)
+    
+    if not (filename.lower().endswith('.xlsx') or filename.lower().endswith('.csv')):
+        return {"error": "檔案格式不支援，請上傳 .xlsx 或 .csv 檔案"}, 400
+
+    try:
+        input_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(input_path)
+        name, ext = os.path.splitext(filename)
+        output_filename = f"{name}-count.xlsx"
+        output_path = os.path.join(RESULT_FOLDER, output_filename)
+
+        if filename.lower().endswith('.xlsx'):
+            # MyET xlsx 處理邏輯
+            wb = load_workbook(input_path)
+            ws = wb.active
+
+            # 秒數欄位 E
+            ws["E2"] = "秒數"
+            max_row = ws.max_row
+            for i in range(3, max_row + 1):
+                c_cell = f"C{i}"
+                e_cell = f"E{i}"
+                formula_e = '=IFERROR(LEFT({},FIND("天",{})-1)*86400,0) + IFERROR(MID({},FIND("天",{})+2,FIND("小時",{})-FIND("天",{})-2)*3600,0) + IFERROR(MID({},FIND("小時",{})+2,FIND("分",{})-FIND("小時",{})-2)*60,0) + IFERROR(MID({},FIND("分",{})+2,FIND("秒",{})-FIND("分",{})-2),0)'.format(
+                    c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell,c_cell
+                )
+                ws[e_cell] = formula_e
+
+            # 分數欄位 F
+            ws["F2"] = "分數"
+            for i in range(3, max_row + 1):
+                e_cell = f"E{i}"
+                f_cell = f"F{i}"
+                formula_f = '=IF({}>=43200, 5, ROUND({}/43200*5, 2))'.format(e_cell, e_cell)
+                ws[f_cell] = formula_f
+
+            # 時分欄位 G
+            ws["G2"] = "時分"
+            for i in range(3, max_row + 1):
+                e_cell = f"E{i}"
+                g_cell = f"G{i}"
+                formula_g = '=TEXT(INT({}/3600),"00")&"時"&TEXT(INT(MOD({},3600)/60),"00")&"分"'.format(e_cell, e_cell)
+                ws[g_cell] = formula_g
+
+            wb.save(output_path)
+
+        else:
+            # EasyTest csv 處理邏輯
+            # CSV 處理邏輯從 app2.py 移植過來
+            try:
+                df = pd.read_csv(input_path, encoding='utf-8')
+            except UnicodeDecodeError:
+                try:
+                    df = pd.read_csv(input_path, encoding='big5')
+                except UnicodeDecodeError:
+                    df = pd.read_csv(input_path, encoding='ISO-8859-1')
+
+            if '總時數' in df.columns:
+                df['總時數'] = df['總時數'].astype(str)
+            if '登入次數' in df.columns:
+                df = df.drop(columns=['登入次數'])
+
+            df.to_excel(output_path, index=False)
+            wb = load_workbook(output_path)
+            ws = wb.active
+
+            # Add formulas
+            ws["D1"] = "秒數"
+            for i in range(2, len(df) + 2):
+                c_cell = f"C{i}"
+                d_cell = f"D{i}"
+                formula_d = '=IFERROR(LEFT({},FIND("時",{})-1)*3600,0) + IFERROR(MID({},FIND("時",{})+1,FIND("分",{})-FIND("時",{})-1)*60,0)'.format(
+                    c_cell, c_cell, c_cell, c_cell, c_cell, c_cell
+                )
+                ws[d_cell] = formula_d
+
+            ws["E1"] = "分數"
+            for i in range(2, len(df) + 2):
+                d_cell = f"D{i}"
+                e_cell = f"E{i}"
+                formula_e = '=IF({}>=43200, 5, ROUND({}/43200*5, 2))'.format(d_cell, d_cell)
+                ws[e_cell] = formula_e
+
+            wb.save(output_path)
+
+        @after_this_request
+        def remove_files(response):
+            try:
+                os.remove(input_path)
+                os.remove(output_path)
+            except Exception as e:
+                print(f"Error deleting files: {e}")
+            return response
+
+        return send_file(output_path, as_attachment=True)
+
+    except Exception as e:
+        if os.path.exists(input_path):
+            os.remove(input_path)
+        return {"error": str(e)}, 500
+
+@app.route('/new')
+def new():
+    return render_template('new.html')
 
 @app.route('/new/upload', methods=['POST'])
 def upload_file():
@@ -204,14 +333,7 @@ def upload_file():
     except Exception as e:
         return f"處理檔案時發生錯誤: {str(e)}", 500
 
-
-def cleanup_task():
-    while True:
-        # Implement any periodic cleanup if necessary
-        pass
-
 if __name__ == '__main__':
-    # Start cleanup task thread
     cleanup_thread = Thread(target=cleanup_task, daemon=True)
     cleanup_thread.start()
     app.run(host='0.0.0.0', port=5000, debug=True)
