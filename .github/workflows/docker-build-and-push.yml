@@ -3,7 +3,7 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   build:
@@ -27,5 +27,5 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/easytest:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/easytest:dev
           context: .

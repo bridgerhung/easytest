@@ -10,10 +10,8 @@ COPY requirements.txt requirements.txt
 # 安裝 Python 依賴
 RUN pip install --no-cache-dir -r requirements.txt
 
-
 # 使用 Gunicorn 啟動應用
 RUN pip install gunicorn
-
 
 # 複製應用代碼到容器
 COPY . .
