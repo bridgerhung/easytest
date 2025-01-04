@@ -12,6 +12,11 @@
       sizes="32x32"
       href="/static/favicon-32x32.png"
     />
+    <!-- Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
     <!-- Google tag (gtag.js) -->
     <script
       async
@@ -26,6 +31,7 @@
 
       gtag("config", "G-6DQ663S55E");
     </script>
+    <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="EasyTest & MyET 分數秒數合併計算服務" />
     <meta
       property="og:description"
@@ -35,11 +41,6 @@
     <meta property="og:url" content="https://csv.brid.pw" />
     <meta property="og:type" content="website" />
     <link rel="stylesheet" href="static/css/styles.css" />
-    <!-- Add Font Awesome for icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-    />
   </head>
   <body>
     <div class="container">
@@ -110,34 +111,30 @@
         </form>
       </div>
 
+      <div class="image-container">
+        <img src="static/SaRsSDo.png" alt="貼上值" class="enlargeable" />
+        <img src="static/RWvWTmk.png" alt="操作示意" class="enlargeable" />
+      </div>
+
       <div class="footer">
-        © <span id="year"></span>
-        <a href="https://github.com/bridgerhung/easytest" target="_blank"
-          >Bridger Hung</a
-        >
-        <a href="#" onclick="openDisclaimer(event)">免責聲明</a>
-        <a href="http://brid.pw/mailme" target="_blank">與我聯絡</a>
+        <p>
+          © <span id="year"></span>
+          <a href="https://github.com/bridgerhung/easytest" target="_blank"
+            >Bridger Hung</a
+          >
+          <a href="#" onclick="openDisclaimer(event)">免責聲明</a>
+          <a href="http://brid.pw/mailme" target="_blank">與我聯絡</a>
+        </p>
       </div>
     </div>
 
-    <div class="images">
-      <img
-        src="static/SaRsSDo.png"
-        alt="貼上值"
-        onclick="openModal(this.src, this.alt)"
-      />
-      <img
-        src="static/RWvWTmk.png"
-        alt="操作示意"
-        onclick="openModal(this.src, this.alt)"
-      />
+    <!-- Image Modal -->
+    <div id="imageModal" class="image-modal">
+      <span class="close" onclick="closeImageModal()">&times;</span>
+      <img class="modal-content" id="modalImage" alt="Enlarged Image" />
     </div>
 
-    <div id="myModal" class="modal">
-      <span class="close" onclick="closeModal()">&times;</span>
-      <img class="modal-content" id="img01" />
-    </div>
-
+    <!-- Disclaimer Modal -->
     <div id="disclaimerModal" class="disclaimer-modal">
       <div class="disclaimer-content">
         <span class="close" onclick="closeDisclaimer()">&times;</span>
@@ -147,6 +144,7 @@
         <p>本服務不儲存您上傳的資料和計算結果。</p>
       </div>
     </div>
+
     <script src="static/js/main.js"></script>
   </body>
 </html>
