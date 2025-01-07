@@ -62,7 +62,7 @@ def legacy_upload():
         output_filename = f"{name}-count.xlsx"
         output_path = os.path.join(RESULT_FOLDER, output_filename)
 
-        if filename.lower().endswith('.xlsx'):
+        if filename.startswith('OnlineInfo') and filename.lower().endswith('.xlsx'):
             # MyET xlsx 處理邏輯
             wb = load_workbook(input_path)
             ws = wb.active
@@ -95,6 +95,33 @@ def legacy_upload():
                 ws[g_cell] = formula_g
 
             wb.save(output_path)
+        elif filename.startswith('ScoreReport') and filename.lower().endswith('.xlsx'):
+            # Add formulas
+            wb = load_workbook(input_path)
+            ws = wb.active
+            # 將上線時間(第三欄C) 轉為秒數，存於 G3 開始
+            ws["G2"] = "MyET秒數"
+            max_row = ws.max_row
+
+            for i in range(3, max_row + 1):
+                d_cell = f"D{i}"
+                g_cell = f"G{i}"
+                ws[g_cell] = (
+                    f'=IFERROR(LEFT({d_cell},FIND("小時",{d_cell})-1)*3600,0) + '
+                    f'IFERROR(MID({d_cell},FIND("小時",{d_cell})+2,FIND("分鐘",{d_cell})-FIND("小時",{d_cell})-2)*60,0)'
+                )
+
+
+            # 在 H 欄加入 MyET 分數
+            ws["H2"] = "MyET分數"
+            for i in range(3, max_row + 1):
+                g_cell = f"G{i}"
+                h_cell = f"H{i}"
+                formula_h = f'=IF({g_cell}>=43200, 5, ROUND({g_cell}/43200*5, 2))'
+                ws[h_cell] = formula_h
+
+            wb.save(output_path)
+            
 
         else:
             # EasyTest csv 處理邏輯
