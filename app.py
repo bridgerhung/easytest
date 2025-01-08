@@ -210,133 +210,243 @@ def upload_file():
         history_file.save(history_path)
         online_info_file.save(online_info_path)
 
-        # Process OnlineInfo_*.xlsx
-        online_df = pd.read_excel(
-            online_info_path,
-            sheet_name=0,
-            skiprows=1,  # Assuming headers are in the second row (A2)
-            usecols=["帳號", "姓名", "總上線時間", "登入學習次數"]
-        )
-
-        # Process history*.csv
-        try:
-            history_df = pd.read_csv(history_path, encoding='utf-8')
-        except UnicodeDecodeError:
+        if online_info_file.filename.startswith("ScoreReport_"):
+            # Process ScoreReport_*.xlsx
+            online_df = pd.read_excel(
+                online_info_path,
+                sheet_name=0,
+                skiprows=1,  # Assuming headers are in the second row (A2)
+                usecols=["帳號", "名字", "上線時間", "平均分數", "次"]
+            )
             try:
-                history_df = pd.read_csv(history_path, encoding='big5')
+                history_df = pd.read_csv(history_path, encoding='utf-8')
             except UnicodeDecodeError:
-                history_df = pd.read_csv(history_path, encoding='ISO-8859-1')
+                try:
+                    history_df = pd.read_csv(history_path, encoding='big5')
+                except UnicodeDecodeError:
+                    history_df = pd.read_csv(history_path, encoding='ISO-8859-1')
 
-        # Ensure necessary columns exist
-        required_history_columns = ["使用者帳號", "姓名", "登入次數", "總時數"]
-        for col in required_history_columns:
-            if col not in history_df.columns:
-                return f"History 檔案缺少必要的欄位: {col}", 400
+            required_history_columns = ["使用者帳號", "姓名", "登入次數", "總時數"]
+            for col in required_history_columns:
+                if col not in history_df.columns:
+                    return f"History 檔案缺少必要的欄位: {col}", 400
 
-        # Convert '總時數' to string
-        history_df['總時數'] = history_df['總時數'].astype(str)
+            history_df['總時數'] = history_df['總時數'].astype(str)
+            history_df = history_df.drop(columns=['登入次數'])
+            # history_df.rename(columns={'姓名': '名字'}, inplace=True)
 
-        # Drop '登入次數' column
-        history_df = history_df.drop(columns=['登入次數'])
 
-        # Merge datasets based on account numbers with suffixes to handle duplicate '姓名'
-        merged_df = pd.merge(
-            online_df,
-            history_df,
-            left_on='帳號',
-            right_on='使用者帳號',
-            how='left',
-            suffixes=('_online', '_history')
-        )
-
-        # Check if '姓名_online' exists
-        if '姓名_online' not in merged_df.columns:
-            return "合併後的資料缺少 '姓名_online' 欄位", 400
-
-        # Select and rename necessary columns
-        result_df = merged_df[
-            ['帳號', '姓名_online', '總上線時間', '登入學習次數', '總時數']
-        ].copy()
-        result_df.rename(columns={'姓名_online': '姓名'}, inplace=True)
-
-        # Insert blank columns for MyET calculations to position '總時數' in H
-        result_df.insert(4, 'MyET秒數', '')
-        result_df.insert(5, 'MyET分數', '')
-        result_df.insert(6, 'MyET時分', '')
-        # '總時數' will now be in H (8th column)
-
-        # Save merged data to Excel
-        result_filename = 'result.xlsx'
-        result_path = os.path.join(RESULT_FOLDER, result_filename)
-        result_df.to_excel(result_path, index=False)
-
-        # Use openpyxl to add formulas
-        wb = load_workbook(result_path)
-        ws = wb.active
-
-        max_row = ws.max_row
-
-        # Add "MyET秒數" formula in E2:E{max_row}
-        ws["E1"] = "MyET秒數"
-        for i in range(2, max_row + 1):
-            total_time_cell = f"C{i}"  # 總上線時間在 C 欄
-            formula_e = (
-                f'=IFERROR(LEFT({total_time_cell},FIND("天",{total_time_cell})-1)*86400,0) + '
-                f'IFERROR(MID({total_time_cell},FIND("天",{total_time_cell})+2,FIND("小時",{total_time_cell})-FIND("天",{total_time_cell})-2)*3600,0) + '
-                f'IFERROR(MID({total_time_cell},FIND("小時",{total_time_cell})+2,FIND("分",{total_time_cell})-FIND("小時",{total_time_cell})-2)*60,0) + '
-                f'IFERROR(MID({total_time_cell},FIND("分",{total_time_cell})+2,FIND("秒",{total_time_cell})-FIND("分",{total_time_cell})-2),0)'
+            merged_df = pd.merge(
+                online_df,
+                history_df,
+                left_on='帳號',
+                right_on='使用者帳號',
+                how='left',
+                suffixes=('_online', '_history')
             )
-            ws[f"E{i}"] = formula_e
 
-        # Add "MyET分數" formula in F2:F{max_row}
-        ws["F1"] = "MyET分數"
-        for i in range(2, max_row + 1):
-            myet_seconds = f"E{i}"
-            formula_f = f'=IF({myet_seconds}>=43200, 5, ROUND({myet_seconds}/43200*5, 2))'
-            ws[f"F{i}"] = formula_f
+            if '名字' not in merged_df.columns:
+                return "合併後的資料缺少 '名字' 欄位", 400
+            if '總時數' not in merged_df.columns:
+                return "合併後的資料缺少 '總時數' 欄位", 400
 
-        # Add "MyET時分" formula in G2:G{max_row}
-        ws["G1"] = "MyET時分"
-        for i in range(2, max_row + 1):
-            myet_seconds = f"E{i}"
-            formula_g = (
-                f'=TEXT(INT({myet_seconds}/3600),"00")&"時"&'
-                f'TEXT(INT(MOD({myet_seconds},3600)/60),"00")&"分"'
-            )
-            ws[f"G{i}"] = formula_g
+            result_df = merged_df[["帳號","名字","上線時間","總時數"]].copy()
 
-        # '總時數' 已經在 H 欄，確保以文字形式儲存
-        ws["H1"] = "EasyTest總時數"
-        for i in range(2, max_row + 1):
-            total_time = ws[f"H{i}"].value
-            if total_time is not None:
-                ws[f"H{i}"] = f"{total_time}"  # Prepend apostrophe to store as text
+            # Insert columns for calculations (MyET秒數 F, MyET分數 G, EasyTest總時數 H, EasyTest秒數 I, EasyTest分數 J, 總分 K)
+            # result_df.insert(4, 'MyET秒數', '')
+            # result_df.insert(5, 'MyET分數', '')
 
-        # Add "EasyTest總時數(Referenced from history.csv 總時數)" in I2:I{max_row}
-        ws["I1"] = "EasyTest秒數"
-        for i in range(2, max_row + 1):
-            total_seconds = f"H{i}"  # '總時數' 在 H 欄
-            formula_i = (
-                f'=IFERROR(LEFT({total_seconds},FIND("時",{total_seconds})-1)*3600,0) + '
-                f'IFERROR(MID({total_seconds},FIND("時",{total_seconds})+1,FIND("分",{total_seconds})-FIND("時",{total_seconds})-1)*60,0)'
-            )
-            ws[f"I{i}"] = formula_i
+            result_filename = 'result.xlsx'
+            result_path = os.path.join(RESULT_FOLDER, result_filename)
+            result_df.to_excel(result_path, index=False)
 
-        # Add "EasyTest分數" formula in J2:J{max_row}
-        ws["J1"] = "EasyTest分數"
-        for i in range(2, max_row + 1):
-            easytest_seconds = f"I{i}"
-            formula_j = f'=IF({easytest_seconds}>=43200, 5, ROUND({easytest_seconds}/43200*5, 2))'
-            ws[f"J{i}"] = formula_j
-        
-        # Add "總分" formula in K2:K{max_row}
-            ws["K1"] = "總分"
+            wb = load_workbook(result_path)
+            ws = wb.active
+            max_row = ws.max_row
+            # EasyTest總時數 in F2:F{max_row}
+            ws["D1"] = "EasyTest總時數"
             for i in range(2, max_row + 1):
-                formula_k = f"=F{i} + J{i}"
-                ws[f"K{i}"] = formula_k
-        
+                total_time = ws[f"D{i}"].value
+                if total_time is not None:
+                    ws[f"D{i}"].value = f"{total_time}"  # Prepend apostrophe to store as text
 
-        wb.save(result_path)
+
+            # MyET秒數 in F2:F{max_row}
+            ws["E1"] = "MyET秒數"
+            for i in range(2, max_row + 1):
+                time_cell = f"C{i}"  # 上線時間在第 3 欄
+                ws[f"E{i}"] = (
+                    f'=IFERROR(LEFT({time_cell},FIND("小時",{time_cell})-1)*3600,0) + '
+                    f'IFERROR(MID({time_cell},FIND("小時",{time_cell})+2,FIND("分鐘",{time_cell})-FIND("小時",{time_cell})-2)*60,0)'
+                )
+
+            # MyET分數 in G2:G{max_row}
+            ws["F1"] = "MyET分數"
+            for i in range(2, max_row + 1):
+                s_cell = f"F{i}"
+                ws[f"G{i}"] = f'=IF({s_cell}>=43200, 5, ROUND({s_cell}/43200*5, 2))'
+
+            
+            # EasyTest秒數 in G2:G{max_row}
+            ws["G1"] = "EasyTest秒數"
+            for i in range(2, max_row + 1):
+                t_cell = f"D{i}"
+                ws[f"G{i}"] = (
+                    f'=IFERROR(LEFT({t_cell},FIND("時",{t_cell})-1)*3600,0) + '
+                    f'IFERROR(MID({t_cell},FIND("時",{t_cell})+1,FIND("分",{t_cell})-FIND("時",{t_cell})-1)*60,0)'
+                )
+
+            # EasyTest分數 in H2:H{max_row}
+            ws["F1"] = "MyET分數"
+            for i in range(2, max_row + 1):
+                s_cell = f"E{i}"
+                ws[f"F{i}"] = f'=IF({s_cell}>=43200, 5, ROUND({s_cell}/43200*5, 2))'
+            
+            ws["H1"] = "EasyTest分數"
+            for i in range(2, max_row + 1):
+                s_cell = f"G{i}"
+                ws[f"H{i}"] = f'=IF({s_cell}>=43200, 5, ROUND({s_cell}/43200*5, 2))'
+            
+
+            # 總分 in I2:I{max_row}
+            ws["I1"] = "總分"
+            for i in range(2, max_row + 1):
+                ws[f"I{i}"] = f"=F{i}+H{i}"
+
+            wb.save(result_path)
+
+        elif online_info_file.filename.startswith("OnlineInfo"):
+            # Process OnlineInfo_*.xlsx
+
+            online_df = pd.read_excel(
+                online_info_path,
+                sheet_name=0,
+                skiprows=1,  # Assuming headers are in the second row (A2)
+                usecols=["帳號", "姓名", "總上線時間", "登入學習次數"]
+            )
+
+            # Process history*.csv
+            try:
+                history_df = pd.read_csv(history_path, encoding='utf-8')
+            except UnicodeDecodeError:
+                try:
+                    history_df = pd.read_csv(history_path, encoding='big5')
+                except UnicodeDecodeError:
+                    history_df = pd.read_csv(history_path, encoding='ISO-8859-1')
+
+            # Ensure necessary columns exist
+            required_history_columns = ["使用者帳號", "姓名", "登入次數", "總時數"]
+            for col in required_history_columns:
+                if col not in history_df.columns:
+                    return f"History 檔案缺少必要的欄位: {col}", 400
+
+            # Convert '總時數' to string
+            history_df['總時數'] = history_df['總時數'].astype(str)
+
+            # Drop '登入次數' column
+            history_df = history_df.drop(columns=['登入次數'])
+
+            # Merge datasets based on account numbers with suffixes to handle duplicate '姓名'
+            merged_df = pd.merge(
+                online_df,
+                history_df,
+                left_on='帳號',
+                right_on='使用者帳號',
+                how='left',
+                suffixes=('_online', '_history')
+            )
+
+            # Check if '姓名_online' exists
+            if '姓名_online' not in merged_df.columns:
+                return "合併後的資料缺少 '姓名_online' 欄位", 400
+
+            # Select and rename necessary columns
+            result_df = merged_df[
+                ['帳號', '姓名_online', '總上線時間', '登入學習次數', '總時數']
+            ].copy()
+            result_df.rename(columns={'姓名_online': '姓名'}, inplace=True)
+
+            # Insert blank columns for MyET calculations to position '總時數' in H
+            result_df.insert(4, 'MyET秒數', '')
+            result_df.insert(5, 'MyET分數', '')
+            result_df.insert(6, 'MyET時分', '')
+            # '總時數' will now be in H (8th column)
+
+            # Save merged data to Excel
+            result_filename = 'result.xlsx'
+            result_path = os.path.join(RESULT_FOLDER, result_filename)
+            result_df.to_excel(result_path, index=False)
+
+            # Use openpyxl to add formulas
+            wb = load_workbook(result_path)
+            ws = wb.active
+
+            max_row = ws.max_row
+
+            # Add "MyET秒數" formula in E2:E{max_row}
+            ws["E1"] = "MyET秒數"
+            for i in range(2, max_row + 1):
+                total_time_cell = f"C{i}"  # 總上線時間在 C 欄
+                formula_e = (
+                    f'=IFERROR(LEFT({total_time_cell},FIND("天",{total_time_cell})-1)*86400,0) + '
+                    f'IFERROR(MID({total_time_cell},FIND("天",{total_time_cell})+2,FIND("小時",{total_time_cell})-FIND("天",{total_time_cell})-2)*3600,0) + '
+                    f'IFERROR(MID({total_time_cell},FIND("小時",{total_time_cell})+2,FIND("分",{total_time_cell})-FIND("小時",{total_time_cell})-2)*60,0) + '
+                    f'IFERROR(MID({total_time_cell},FIND("分",{total_time_cell})+2,FIND("秒",{total_time_cell})-FIND("分",{total_time_cell})-2),0)'
+                )
+                ws[f"E{i}"] = formula_e
+
+            # Add "MyET分數" formula in F2:F{max_row}
+            ws["F1"] = "MyET分數"
+            for i in range(2, max_row + 1):
+                myet_seconds = f"E{i}"
+                formula_f = f'=IF({myet_seconds}>=43200, 5, ROUND({myet_seconds}/43200*5, 2))'
+                ws[f"F{i}"] = formula_f
+
+            # Add "MyET時分" formula in G2:G{max_row}
+            ws["G1"] = "MyET時分"
+            for i in range(2, max_row + 1):
+                myet_seconds = f"E{i}"
+                formula_g = (
+                    f'=TEXT(INT({myet_seconds}/3600),"00")&"時"&'
+                    f'TEXT(INT(MOD({myet_seconds},3600)/60),"00")&"分"'
+                )
+                ws[f"G{i}"] = formula_g
+
+            # '總時數' 已經在 H 欄，確保以文字形式儲存
+            ws["H1"] = "EasyTest總時數"
+            for i in range(2, max_row + 1):
+                total_time = ws[f"H{i}"].value
+                if total_time is not None:
+                    ws[f"H{i}"] = f"{total_time}"  # Prepend apostrophe to store as text
+
+            # Add "EasyTest總時數(Referenced from history.csv 總時數)" in I2:I{max_row}
+            ws["I1"] = "EasyTest秒數"
+            for i in range(2, max_row + 1):
+                total_seconds = f"H{i}"  # '總時數' 在 H 欄
+                formula_i = (
+                    f'=IFERROR(LEFT({total_seconds},FIND("時",{total_seconds})-1)*3600,0) + '
+                    f'IFERROR(MID({total_seconds},FIND("時",{total_seconds})+1,FIND("分",{total_seconds})-FIND("時",{total_seconds})-1)*60,0)'
+                )
+                ws[f"I{i}"] = formula_i
+
+            # Add "EasyTest分數" formula in J2:J{max_row}
+            ws["J1"] = "EasyTest分數"
+            for i in range(2, max_row + 1):
+                easytest_seconds = f"I{i}"
+                formula_j = f'=IF({easytest_seconds}>=43200, 5, ROUND({easytest_seconds}/43200*5, 2))'
+                ws[f"J{i}"] = formula_j
+            
+            # Add "總分" formula in K2:K{max_row}
+                ws["K1"] = "總分"
+                for i in range(2, max_row + 1):
+                    formula_k = f"=F{i} + J{i}"
+                    ws[f"K{i}"] = formula_k
+            
+
+            wb.save(result_path)
+            pass
+        else:
+            return "不支援的檔案格式", 400
 
         # Clean up uploaded files
         try:
