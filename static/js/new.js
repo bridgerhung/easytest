@@ -5,7 +5,7 @@ const fileInput = document.getElementById("fileInput");
 fileInput.disabled = true;
 
 window.onloadTurnstileCallback = function () {
-  turnstile.render("cf-turnstile", {
+  turnstile.render("#cf-turnstile", {
     sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
     callback: function (token) {
       console.log(`Challenge Success ${token}`);

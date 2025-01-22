@@ -60,7 +60,8 @@
 
         <div class="upload-section">
           <p>
-            請同時上傳 <strong>MyET 的 xlsx 檔案 (Onlineinfo & ScoreReport) </strong> 以及
+            請同時上傳
+            <strong>MyET 的 xlsx 檔案 (Onlineinfo & ScoreReport) </strong> 以及
             <strong>EasyTest 的 csv 檔</strong>
             <br />本系統將為您自動計算成績並轉換為 Excel 檔案。
           </p>
@@ -95,7 +96,9 @@
                 accept=".csv"
                 required
               />
-              <small class="file-hint">請上傳從 EasyTest 下載的 history.csv 檔案 </small>
+              <small class="file-hint"
+                >請上傳從 EasyTest 下載的 history.csv 檔案
+              </small>
             </div>
 
             <div class="file-upload-block">
@@ -110,8 +113,22 @@
                 accept=".xlsx"
                 required
               />
-              <small class="file-hint">請上傳從 MyET 下載的 Excel 檔案 (Onlineinfo.xlsx 或 ScoreReport.xlsx) </small>
+              <small class="file-hint"
+                >請上傳從 MyET 下載的 Excel 檔案 (Onlineinfo.xlsx 或
+                ScoreReport.xlsx)
+              </small>
             </div>
+          </div>
+          <div class="upload-zone" id="dropZone">
+            <img src="static/upload-icon.svg" alt="上傳" class="upload-icon" />
+            <p>點擊下方按鈕</p>
+            <input
+              type="file"
+              id="fileInput"
+              accept=".xlsx,.csv"
+              style="display: none"
+            />
+            <button class="btn">選擇檔案</button>
           </div>
           <div
             class="cf-turnstile"
@@ -174,6 +191,6 @@
         <p>本服務不儲存您上傳的資料和計算結果。</p>
       </div>
     </div>
-    <script src="static/js/new.js"></script>
+    <script src="static/js/new.js" defer></script>
   </body>
 </html>
