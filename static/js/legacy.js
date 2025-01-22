@@ -4,14 +4,16 @@ const fileInput = document.getElementById("fileInput");
 const imageModal = document.getElementById("imageModal");
 const modalImage = document.getElementById("modalImage");
 
-// Disable file input until CAPTCHA succeeds
-fileInput.disabled = true;
+let captchaVerified = false; // Track CAPTCHA status
+let captchaToken = ""; // Store CAPTCHA token
 
 window.onloadTurnstileCallback = function () {
   turnstile.render("#cf-turnstile", {
     sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
     callback: function (token) {
-      fileInput.disabled = false;
+      console.log(`Challenge Success ${token}`);
+      captchaVerified = true; // Set CAPTCHA as verified
+      captchaToken = token; // Store CAPTCHA token
     },
   });
 };
@@ -78,7 +80,14 @@ function handleDrop(e) {
 }
 
 // 點擊上傳區域時觸發檔案選取
-dropZone.addEventListener("click", () => fileInput.click());
+dropZone.addEventListener("click", () => {
+  if (!captchaVerified) {
+    // Check if CAPTCHA is verified
+    alert("請先完成人機驗證 (CAPTCHA)");
+    return; // Prevent file selection if CAPTCHA not verified
+  }
+  fileInput.click(); // Proceed to file selection if verified
+});
 
 // 處理檔案選取變更
 fileInput.addEventListener("change", (e) => {
@@ -89,34 +98,6 @@ fileInput.addEventListener("change", (e) => {
 
 // 初始化拖放
 initializeDragAndDrop();
-
-// 處理檔案上傳
-fileInput.addEventListener("change", function (e) {
-  if (this.files && this.files[0]) {
-    const formData = new FormData();
-    formData.append("file", this.files[0]);
-
-    fetch("/legacy/upload", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => response.blob())
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download =
-          this.files[0].name.replace(/\.[^/.]+$/, "") + "-count.xlsx";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
-});
 
 // 開啟圖片模態框
 function openImageModal(src) {
@@ -141,7 +122,40 @@ window.onclick = function (event) {
 
 // 處理檔案上傳（示例函數，需根據實際需求實現）
 function handleFileUpload(file) {
-  // TODO: 實現檔案上傳邏輯
+  if (!captchaVerified) {
+    // Ensure CAPTCHA is verified
+    alert("請先完成人機驗證 (CAPTCHA)");
+    return; // Prevent file upload if CAPTCHA not verified
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("cf-turnstile-response", captchaToken); // Append CAPTCHA token
+
+  fetch("/legacy/upload", {
+    method: "POST",
+    body: formData,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+      return response.blob();
+    })
+    .then((blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name.replace(/\.[^/.]+$/, "") + "-count.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      alert("文件上傳失敗，請再試一次。");
+    });
 }
 
 // Update footer year

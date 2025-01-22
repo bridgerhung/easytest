@@ -119,22 +119,8 @@
               </small>
             </div>
           </div>
-          <div class="upload-zone" id="dropZone">
-            <img src="static/upload-icon.svg" alt="上傳" class="upload-icon" />
-            <p>點擊下方按鈕</p>
-            <input
-              type="file"
-              id="fileInput"
-              accept=".xlsx,.csv"
-              style="display: none"
-            />
-            <button class="btn">選擇檔案</button>
-          </div>
-          <div
-            class="cf-turnstile"
-            data-sitekey="0x4AAAAAAA3QtOGlz4UGnf74"
-            data-callback="javascriptCallback"
-          ></div>
+
+          <div id="cf-turnstile" class="cf-turnstile"></div>
           <div class="button-container">
             <button type="submit" class="button">開始轉換</button>
           </div>

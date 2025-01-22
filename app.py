@@ -11,7 +11,6 @@ import requests
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 RESULT_FOLDER = 'results'
-SECRET_KEY = "0x4AAAAAAA3QtBJetDiwkHBb1Y4KD4h2Rt4"  
 TURNSTILE_SECRET_KEY = "0x4AAAAAAA3QtBJetDiwkHBb1Y4KD4h2Rt4"
 
 # Create directories
