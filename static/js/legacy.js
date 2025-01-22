@@ -4,6 +4,18 @@ const fileInput = document.getElementById("fileInput");
 const imageModal = document.getElementById("imageModal");
 const modalImage = document.getElementById("modalImage");
 
+// Disable file input until CAPTCHA succeeds
+fileInput.disabled = true;
+
+window.onloadTurnstileCallback = function () {
+  turnstile.render("#cf-turnstile", {
+    sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
+    callback: function (token) {
+      fileInput.disabled = false;
+    },
+  });
+};
+
 // 初始化拖放功能
 function initializeDragAndDrop() {
   ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {

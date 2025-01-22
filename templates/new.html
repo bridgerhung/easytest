@@ -113,11 +113,20 @@
               <small class="file-hint">請上傳從 MyET 下載的 Excel 檔案</small>
             </div>
           </div>
+          <div
+            class="cf-turnstile"
+            data-sitekey="0x4AAAAAAA3QtOGlz4UGnf74"
+            data-callback="javascriptCallback"
+          ></div>
           <div class="button-container">
             <button type="submit" class="button">開始轉換</button>
           </div>
         </form>
       </div>
+      <script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
+        defer
+      ></script>
 
       <!-- Replace existing footer with standardized version -->
       <footer class="footer">

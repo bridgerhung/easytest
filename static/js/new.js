@@ -1,3 +1,20 @@
+const dropZone = document.getElementById("dropZone");
+const fileInput = document.getElementById("fileInput");
+
+// Disable once here
+fileInput.disabled = true;
+
+window.onloadTurnstileCallback = function () {
+  turnstile.render("cf-turnstile", {
+    sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
+    callback: function (token) {
+      console.log(`Challenge Success ${token}`);
+      // Re-enable once CAPTCHA passes
+      fileInput.disabled = false;
+    },
+  });
+};
+
 // Update footer year
 document.getElementById("year").textContent = new Date().getFullYear();
 
@@ -42,8 +59,6 @@ window.addEventListener("click", function (event) {
 });
 
 /* Drag and Drop Functionality */
-const dropZone = document.getElementById("dropZone");
-const fileInput = document.getElementById("fileInput");
 
 // Open file dialog on drop zone click
 dropZone.onclick = () => fileInput.click();

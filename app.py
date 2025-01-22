@@ -6,10 +6,13 @@ from datetime import datetime, timedelta
 from threading import Thread
 from openpyxl import load_workbook
 from werkzeug.utils import secure_filename
+import requests
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 RESULT_FOLDER = 'results'
+SECRET_KEY = "0x4AAAAAAA3QtBJetDiwkHBb1Y4KD4h2Rt4"  
+TURNSTILE_SECRET_KEY = "0x4AAAAAAA3QtBJetDiwkHBb1Y4KD4h2Rt4"
 
 # Create directories
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -43,6 +46,22 @@ def legacy():
 
 @app.route('/legacy/upload', methods=['POST'])
 def legacy_upload():
+    captcha_token = request.form.get('cf-turnstile-response')
+    if not captcha_token:
+        return {"error": "CAPTCHA token is missing"}, 400
+
+    verification_url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    payload = {
+        "secret": TURNSTILE_SECRET_KEY,
+        "response": captcha_token,
+        "remoteip": request.remote_addr
+    }
+    response = requests.post(verification_url, data=payload)
+    result = response.json()
+
+    if not result.get("success"):
+        return {"error": "CAPTCHA validation failed"}, 403
+
     if 'file' not in request.files:
         return {"error": "請上傳檔案"}, 400
 
@@ -157,6 +176,22 @@ def new():
 
 @app.route('/new/upload', methods=['POST'])
 def upload_file():
+    captcha_token = request.form.get('cf-turnstile-response')
+    if not captcha_token:
+        return {"error": "CAPTCHA token is missing"}, 400
+
+    verification_url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    payload = {
+        "secret": TURNSTILE_SECRET_KEY,
+        "response": captcha_token,
+        "remoteip": request.remote_addr
+    }
+    response = requests.post(verification_url, data=payload)
+    result = response.json()
+
+    if not result.get("success"):
+        return {"error": "CAPTCHA validation failed"}, 403
+
     # Check if both files are present
     if 'history_file' not in request.files or 'online_info_file' not in request.files:
         return "請上傳 history*.csv 和 OnlineInfo_*.xlsx 檔案", 400
