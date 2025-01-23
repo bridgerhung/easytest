@@ -7,11 +7,17 @@
     <link rel="icon" type="image/x-icon" href="static/favicon.ico" />
     <link rel="stylesheet" href="static/css/new.css" />
     <!-- Cloudflare Turnstile -->
-    <script
-      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-      async
-      defer
-    ></script>
+    <!-- 加載 Turnstile 僅在需要時 -->
+    <script>
+      if (document.getElementById("cf-turnstile")) {
+        const script = document.createElement("script");
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+    </script>
+
   </head>
   <body>
     <div class="container">
