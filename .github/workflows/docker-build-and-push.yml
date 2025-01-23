@@ -1,13 +1,12 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image on Release
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types:
+      - published
 
 jobs:
   build:
-    # 建議明確指定版本，以避免自動切換到 ubuntu-24.04 帶來的不兼容問題
     runs-on: ubuntu-22.04
 
     steps:
@@ -27,5 +26,5 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/easytest:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/easytest:${{ github.event.release.tag_name }}
           context: .
