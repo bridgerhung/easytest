@@ -11,7 +11,7 @@ import requests
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 RESULT_FOLDER = 'results'
-TURNSTILE_SECRET_KEY = "0x4AAAAAAA3QtBJetDiwkHBb1Y4KD4h2Rt4"
+TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY") 
 
 # Create directories
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -55,11 +55,13 @@ def legacy_upload():
         "response": captcha_token,
         "remoteip": request.remote_addr
     }
-    response = requests.post(verification_url, data=payload)
-    result = response.json()
-
-    if not result.get("success"):
-        return {"error": "CAPTCHA validation failed"}, 403
+    try:
+        response = requests.post(verification_url, data=payload, timeout=5)
+        result = response.json()
+        if not result.get("success"):
+            return {"error": "CAPTCHA validation failed"}, 403
+    except requests.RequestException as e:
+        return {"error": "CAPTCHA validation error"}, 500
 
     if 'file' not in request.files:
         return {"error": "請上傳檔案"}, 400
@@ -212,11 +214,13 @@ def upload_file():
         "response": captcha_token,
         "remoteip": request.remote_addr
     }
-    response = requests.post(verification_url, data=payload)
-    result = response.json()
-
-    if not result.get("success"):
-        return {"error": "CAPTCHA validation failed"}, 403
+    try:
+        response = requests.post(verification_url, data=payload, timeout=5)
+        result = response.json()
+        if not result.get("success"):
+            return {"error": "CAPTCHA validation failed"}, 403
+    except requests.RequestException as e:
+        return {"error": "CAPTCHA validation error"}, 500
 
     # Check if both files are present
     if 'history_file' not in request.files or 'online_info_file' not in request.files:
