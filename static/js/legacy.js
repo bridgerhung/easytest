@@ -1,26 +1,22 @@
-const dropZone = document.querySelector(".upload-zone");
+// Select necessary DOM elements
+const submitButton = document.querySelector(".btn");
 const fileInput = document.getElementById("fileInput");
-const submitButton = document.querySelector(".button");
-let captchaVerified = false;
-let captchaToken = "";
+const dropZone = document.getElementById("dropZone");
+submitButton.disabled = true;
 
-// Initialize Turnstile on page load
-window.onloadTurnstileCallback = function () {
-  turnstile.render("#cf-turnstile", {
-    sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
-    callback: function (token) {
-      captchaVerified = true;
-      captchaToken = token;
-      submitButton.disabled = false; // Enable submit button after CAPTCHA success
-    },
-  });
-};
+let captchaVerified = false;
+
+// CAPTCHA success callback
+function onCaptchaSuccess(token) {
+  console.log("CAPTCHA 驗證成功，令牌：", token);
+  captchaVerified = true;
+  submitButton.disabled = false; // Enable button after CAPTCHA verification
+}
 
 // Handle drag-and-drop functionality
 function initializeDragAndDrop() {
   ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
     dropZone.addEventListener(eventName, preventDefaults, false);
-    document.body.addEventListener(eventName, preventDefaults, false);
   });
 
   ["dragenter", "dragover"].forEach((eventName) => {
@@ -43,18 +39,18 @@ function handleDrop(e) {
   const dt = e.dataTransfer;
   const file = dt.files[0];
   if (!file) return;
-
   handleFileUpload(file);
 }
 
-// Handle file selection and upload
+// File selection event
 fileInput.addEventListener("change", (e) => {
-  if (e.target.files.length) {
+  if (e.target.files.length > 0) {
     handleFileUpload(e.target.files[0]);
   }
 });
 
-dropZone.addEventListener("click", () => {
+// Click to open file dialog
+submitButton.addEventListener("click", () => {
   if (!captchaVerified) {
     alert("請先完成人機驗證 (CAPTCHA)");
     return;
@@ -70,7 +66,6 @@ function handleFileUpload(file) {
 
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("cf-turnstile-response", captchaToken);
 
   fetch("/legacy/upload", {
     method: "POST",
@@ -86,7 +81,7 @@ function handleFileUpload(file) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = file.name.replace(/\.[^/.]+$/, "") + "-count.xlsx";
+      a.download = file.name.replace(/\.[^/.]+$/, "") + "-processed.xlsx";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -101,7 +96,7 @@ function handleFileUpload(file) {
 // Update footer year
 document.getElementById("year").textContent = new Date().getFullYear();
 
-/* Disclaimer Modal Functionality */
+/* Disclaimer Modal */
 function openDisclaimer(event) {
   event.preventDefault();
   const disclaimerModal = document.getElementById("disclaimerModal");
@@ -113,7 +108,7 @@ function closeDisclaimer() {
   disclaimerModal.style.display = "none";
 }
 
-/* Image Modal Functionality */
+/* Image Modal */
 function openImageModal(src) {
   const imageModal = document.getElementById("imageModal");
   const modalImage = document.getElementById("modalImage");
@@ -126,7 +121,7 @@ function closeImageModal() {
   imageModal.style.display = "none";
 }
 
-/* Close modals when clicking outside */
+/* Close modals on outside click */
 window.addEventListener("click", function (event) {
   const disclaimerModal = document.getElementById("disclaimerModal");
   const imageModal = document.getElementById("imageModal");
