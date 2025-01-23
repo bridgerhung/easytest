@@ -21,12 +21,18 @@
       gtag("config", "G-6DQ663S55E");
     </script>
 
-    <!-- Cloudflare Turnstile -->
-    <script
-      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-      async
-      defer
-    ></script>
+
+  <!-- 加載 Turnstile 僅在需要時 -->
+  <script>
+    if (document.getElementById("cf-turnstile")) {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+  </script>
+
 
     <link
       rel="stylesheet"
