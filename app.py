@@ -11,7 +11,7 @@ import requests
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 RESULT_FOLDER = 'results'
-TURNSTILE_SECRET_KEY = "0x4AAAAAAA3QtBJetDiwkHBb1Y4KD4h2Rt4"
+TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY")  # Use environment variables
 
 # Create directories
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
