@@ -1,35 +1,29 @@
+// Select necessary DOM elements
 const submitButton = document.querySelector(".button");
 const historyFileInput = document.getElementById("history-file");
 const onlineInfoFileInput = document.getElementById("online-info-file");
-let captchaVerified = false;
-let captchaToken = "";
+submitButton.disabled = true; // Disable the submit button initially
 
-// Initialize Turnstile on page load
-window.onloadTurnstileCallback = function () {
-  turnstile.render("#cf-turnstile", {
-    sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
-    callback: function (token) {
-      captchaVerified = true;
-      captchaToken = token;
-      submitButton.disabled = false;
-    },
-  });
-};
+// CAPTCHA success callback
+function onCaptchaSuccess(token) {
+  console.log("CAPTCHA 驗證成功，令牌：", token);
+  submitButton.disabled = false; // Enable the submit button when verified
+}
 
 // Form submission handler
 const form = document.querySelector(".upload-form");
 form.addEventListener("submit", function (e) {
-  e.preventDefault(); // Prevent default form submission
-
-  if (!captchaVerified) {
-    alert("請先完成人機驗證 (CAPTCHA)");
+  if (submitButton.disabled) {
+    e.preventDefault();
+    alert("請先完成 CAPTCHA 驗證");
     return;
   }
+
+  e.preventDefault(); // Prevent default form submission
 
   const formData = new FormData();
   formData.append("history_file", historyFileInput.files[0]);
   formData.append("online_info_file", onlineInfoFileInput.files[0]);
-  formData.append("cf-turnstile-response", captchaToken);
 
   fetch("/new/upload", {
     method: "POST",
