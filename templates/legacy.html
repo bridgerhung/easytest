@@ -6,14 +6,8 @@
     <title>EasyTest & MyET 秒數計算服務</title>
     <link rel="icon" type="image/x-icon" href="static/favicon.ico" />
     <link rel="stylesheet" href="static/css/legacy.css" />
-    <!-- 在 <head> 中聲明 favicon-32x32.png，提供搜尋引擎與使用者預覽 -->
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="10x10"
-      href="/static/favicon-32x32.png"
-    />
-    <!-- Google tag (gtag.js) -->
+
+    <!-- Google Tag Manager -->
     <script
       async
       src="https://www.googletagmanager.com/gtag/js?id=G-6DQ663S55E"
@@ -24,20 +18,16 @@
         dataLayer.push(arguments);
       }
       gtag("js", new Date());
-
       gtag("config", "G-6DQ663S55E");
     </script>
-    <script src="static/js/legacy.js"></script>
-    <meta property="og:title" content="EasyTest & MyET 秒數計算服務" />
-    <meta
-      property="og:description"
-      content="請上傳 MyET 的 xlsx 檔案 或 EasyTest 的 csv 檔案，系統會自動計算成績並轉換為 Excel 檔案"
-    />
-    <meta property="og:image" content="/static/logo1.png" />
-    <meta property="og:url" content="https://csv.brid.pw" />
-    <meta property="og:type" content="website" />
 
-    <!-- Add Font Awesome for icons -->
+    <!-- Cloudflare Turnstile -->
+    <script
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+      async
+      defer
+    ></script>
+
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
@@ -72,11 +62,10 @@
           <li>⚡ 處理完成後會自動下載結果檔案</li>
         </ul>
       </div>
-      
+
       <div class="upload-zone" id="dropZone">
         <img src="static/upload-icon.svg" alt="上傳" class="upload-icon" />
         <p>點擊下方按鈕</p>
-
         <input
           type="file"
           id="fileInput"
@@ -85,16 +74,13 @@
         />
         <button class="btn">選擇檔案</button>
       </div>
-      <!-- Ensure there's only one Turnstile container with the correct ID -->
+
       <div
         id="cf-turnstile"
         class="cf-turnstile"
-        data-callback="javascriptCallback"
+        data-sitekey="0x4AAAAAAA3QtOGlz4UGnf74"
+        data-callback="onCaptchaSuccess"
       ></div>
-      <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
-        defer
-      ></script>
 
       <div class="notice">
         <span>📝</span>
@@ -116,12 +102,12 @@
         />
       </div>
 
-      <!-- Image Modal -->
       <div id="imageModal" class="image-modal">
         <span class="close" onclick="closeImageModal()">&times;</span>
         <img class="modal-content" id="modalImage" alt="Enlarged Image" />
       </div>
     </div>
+
     <footer class="footer">
       <div class="footer-content">
         <p class="copyright">© <span id="year"></span> Bridger Hung</p>
@@ -139,7 +125,6 @@
       </div>
     </footer>
 
-    <!-- Disclaimer Modal -->
     <div id="disclaimerModal" class="disclaimer-modal">
       <div class="disclaimer-content">
         <span class="close" onclick="closeDisclaimer()">&times;</span>
@@ -149,6 +134,7 @@
         <p>本服務不儲存您上傳的資料和計算結果。</p>
       </div>
     </div>
-    
+
+    <script src="static/js/legacy.js" defer></script>
   </body>
 </html>
