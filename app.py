@@ -248,8 +248,6 @@ def upload_file():
 
             history_df['總時數'] = history_df['總時數'].astype(str)
             history_df = history_df.drop(columns=['登入次數'])
-            # history_df.rename(columns={'姓名': '名字'}, inplace=True)
-
 
             merged_df = pd.merge(
                 online_df,
@@ -267,10 +265,6 @@ def upload_file():
 
             result_df = merged_df[["帳號","名字","上線時間","總時數"]].copy()
 
-            # Insert columns for calculations (MyET秒數 F, MyET分數 G, EasyTest總時數 H, EasyTest秒數 I, EasyTest分數 J, 總分 K)
-            # result_df.insert(4, 'MyET秒數', '')
-            # result_df.insert(5, 'MyET分數', '')
-
             result_filename = 'result.xlsx'
             result_path = os.path.join(RESULT_FOLDER, result_filename)
             result_df.to_excel(result_path, index=False)
@@ -278,15 +272,15 @@ def upload_file():
             wb = load_workbook(result_path)
             ws = wb.active
             max_row = ws.max_row
-            # EasyTest總時數 in F2:F{max_row}
+
+            # EasyTest總時數 in D2:D{max_row}
             ws["D1"] = "EasyTest總時數"
             for i in range(2, max_row + 1):
                 total_time = ws[f"D{i}"].value
                 if total_time is not None:
                     ws[f"D{i}"].value = f"{total_time}"  # Prepend apostrophe to store as text
 
-
-            # MyET秒數 in F2:F{max_row}
+            # MyET秒數 in E2:E{max_row}
             ws["E1"] = "MyET秒數"
             for i in range(2, max_row + 1):
                 time_cell = f"C{i}"  # 上線時間在第 3 欄
@@ -294,22 +288,6 @@ def upload_file():
                     f'=IFERROR(LEFT({time_cell},FIND("小時",{time_cell})-1)*3600,0) + '
                     f'IFERROR(MID({time_cell},FIND("小時",{time_cell})+2,FIND("分鐘",{time_cell})-FIND("小時",{time_cell})-2)*60,0)'
                 )
-
-            # MyET分數 in G2:G{max_row}
-
-            
-            # EasyTest秒數 in G2:G{max_row}
-            ws["G1"] = "EasyTest秒數"
-            for i in range(2, max_row + 1):
-                t_cell = f"D{i}"
-                ws[f"G{i}"] = (
-                    f'=IFERROR(LEFT({t_cell},FIND("時",{t_cell})-1)*3600,0) + '
-                    f'IFERROR(MID({t_cell},FIND("時",{t_cell})+1,FIND("分",{t_cell})-FIND("時",{t_cell})-1)*60,0)'
-                )
-
-            
-
-            # 總分 in I2:I{max_row}
 
             wb.save(result_path)
 
@@ -366,7 +344,7 @@ def upload_file():
 
             # Insert blank columns for MyET calculations to position '總時數' in H
             result_df.insert(4, 'MyET秒數', '')
-            result_df.insert(6, 'MyET時分', '')
+            result_df.insert(5, 'MyET時分', '')
             # '總時數' will now be in H (8th column)
 
             # Save merged data to Excel
@@ -392,41 +370,22 @@ def upload_file():
                 )
                 ws[f"E{i}"] = formula_e
 
-            # Add "MyET分數" formula in F2:F{max_row}
-
-
-            # Add "MyET時分" formula in G2:G{max_row}
-            ws["G1"] = "MyET時分"
+            # Add "MyET時分" formula in F2:F{max_row}
+            ws["F1"] = "MyET時分"
             for i in range(2, max_row + 1):
                 myet_seconds = f"E{i}"
-                formula_g = (
+                formula_f = (
                     f'=TEXT(INT({myet_seconds}/3600),"00")&"時"&'
                     f'TEXT(INT(MOD({myet_seconds},3600)/60),"00")&"分"'
                 )
-                ws[f"G{i}"] = formula_g
+                ws[f"F{i}"] = formula_f
 
-            # '總時數' 已經在 H 欄，確保以文字形式儲存
-            ws["H1"] = "EasyTest總時數"
+            # '總時數' 已經在 G 欄，確保以文字形式儲存
+            ws["G1"] = "EasyTest總時數"
             for i in range(2, max_row + 1):
-                total_time = ws[f"H{i}"].value
+                total_time = ws[f"G{i}"].value
                 if total_time is not None:
-                    ws[f"H{i}"] = f"{total_time}"  # Prepend apostrophe to store as text
-
-            # Add "EasyTest總時數(Referenced from history.csv 總時數)" in I2:I{max_row}
-            ws["I1"] = "EasyTest秒數"
-            for i in range(2, max_row + 1):
-                total_seconds = f"H{i}"  # '總時數' 在 H 欄
-                formula_i = (
-                    f'=IFERROR(LEFT({total_seconds},FIND("時",{total_seconds})-1)*3600,0) + '
-                    f'IFERROR(MID({total_seconds},FIND("時",{total_seconds})+1,FIND("分",{total_seconds})-FIND("時",{total_seconds})-1)*60,0)'
-                )
-                ws[f"I{i}"] = formula_i
-
-
-            
-            # Add "總分" formula in K2:K{max_row}
-
-            
+                    ws[f"G{i}"] = f"{total_time}"  # Prepend apostrophe to store as text
 
             wb.save(result_path)
             pass
