@@ -96,13 +96,7 @@ def legacy_upload():
                 )
                 ws[e_cell] = formula_e
 
-            # 分數欄位 F
-            ws["F2"] = "分數"
-            for i in range(3, max_row + 1):
-                e_cell = f"E{i}"
-                f_cell = f"F{i}"
-                formula_f = '=IF({}>=43200, 5, ROUND({}/43200*5, 2))'.format(e_cell, e_cell)
-                ws[f_cell] = formula_f
+
 
             # 時分欄位 G
             ws["G2"] = "時分"
@@ -130,13 +124,6 @@ def legacy_upload():
                 )
 
 
-            # 在 H 欄加入 MyET 分數
-            ws["H2"] = "MyET分數"
-            for i in range(3, max_row + 1):
-                g_cell = f"G{i}"
-                h_cell = f"H{i}"
-                formula_h = f'=IF({g_cell}>=43200, 5, ROUND({g_cell}/43200*5, 2))'
-                ws[h_cell] = formula_h
 
             wb.save(output_path)
             
@@ -171,12 +158,6 @@ def legacy_upload():
                 )
                 ws[d_cell] = formula_d
 
-            ws["E1"] = "分數"
-            for i in range(2, len(df) + 2):
-                d_cell = f"D{i}"
-                e_cell = f"E{i}"
-                formula_e = '=IF({}>=43200, 5, ROUND({}/43200*5, 2))'.format(d_cell, d_cell)
-                ws[e_cell] = formula_e
 
             wb.save(output_path)
 
@@ -315,10 +296,6 @@ def upload_file():
                 )
 
             # MyET分數 in G2:G{max_row}
-            ws["F1"] = "MyET分數"
-            for i in range(2, max_row + 1):
-                s_cell = f"F{i}"
-                ws[f"G{i}"] = f'=IF({s_cell}>=43200, 5, ROUND({s_cell}/43200*5, 2))'
 
             
             # EasyTest秒數 in G2:G{max_row}
@@ -330,22 +307,9 @@ def upload_file():
                     f'IFERROR(MID({t_cell},FIND("時",{t_cell})+1,FIND("分",{t_cell})-FIND("時",{t_cell})-1)*60,0)'
                 )
 
-            # EasyTest分數 in H2:H{max_row}
-            ws["F1"] = "MyET分數"
-            for i in range(2, max_row + 1):
-                s_cell = f"E{i}"
-                ws[f"F{i}"] = f'=IF({s_cell}>=43200, 5, ROUND({s_cell}/43200*5, 2))'
-            
-            ws["H1"] = "EasyTest分數"
-            for i in range(2, max_row + 1):
-                s_cell = f"G{i}"
-                ws[f"H{i}"] = f'=IF({s_cell}>=43200, 5, ROUND({s_cell}/43200*5, 2))'
             
 
             # 總分 in I2:I{max_row}
-            ws["I1"] = "總分"
-            for i in range(2, max_row + 1):
-                ws[f"I{i}"] = f"=F{i}+H{i}"
 
             wb.save(result_path)
 
@@ -402,7 +366,6 @@ def upload_file():
 
             # Insert blank columns for MyET calculations to position '總時數' in H
             result_df.insert(4, 'MyET秒數', '')
-            result_df.insert(5, 'MyET分數', '')
             result_df.insert(6, 'MyET時分', '')
             # '總時數' will now be in H (8th column)
 
@@ -430,11 +393,7 @@ def upload_file():
                 ws[f"E{i}"] = formula_e
 
             # Add "MyET分數" formula in F2:F{max_row}
-            ws["F1"] = "MyET分數"
-            for i in range(2, max_row + 1):
-                myet_seconds = f"E{i}"
-                formula_f = f'=IF({myet_seconds}>=43200, 5, ROUND({myet_seconds}/43200*5, 2))'
-                ws[f"F{i}"] = formula_f
+
 
             # Add "MyET時分" formula in G2:G{max_row}
             ws["G1"] = "MyET時分"
@@ -463,18 +422,10 @@ def upload_file():
                 )
                 ws[f"I{i}"] = formula_i
 
-            # Add "EasyTest分數" formula in J2:J{max_row}
-            ws["J1"] = "EasyTest分數"
-            for i in range(2, max_row + 1):
-                easytest_seconds = f"I{i}"
-                formula_j = f'=IF({easytest_seconds}>=43200, 5, ROUND({easytest_seconds}/43200*5, 2))'
-                ws[f"J{i}"] = formula_j
+
             
             # Add "總分" formula in K2:K{max_row}
-                ws["K1"] = "總分"
-                for i in range(2, max_row + 1):
-                    formula_k = f"=F{i} + J{i}"
-                    ws[f"K{i}"] = formula_k
+
             
 
             wb.save(result_path)
