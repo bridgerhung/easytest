@@ -289,6 +289,16 @@ def upload_file():
                     f'IFERROR(MID({time_cell},FIND("小時",{time_cell})+2,FIND("分鐘",{time_cell})-FIND("小時",{time_cell})-2)*60,0)'
                 )
 
+            # EasyTest秒數 in F2:F{max_row}
+            ws["F1"] = "EasyTest秒數"
+            for i in range(2, max_row + 1):
+                total_seconds = f"D{i}"  # '總時數' 在 D 欄
+                formula_f = (
+                    f'=IFERROR(LEFT({total_seconds},FIND("時",{total_seconds})-1)*3600,0) + '
+                    f'IFERROR(MID({total_seconds},FIND("時",{total_seconds})+1,FIND("分",{total_seconds})-FIND("時",{total_seconds})-1)*60,0)'
+                )
+                ws[f"F{i}"] = formula_f
+
             wb.save(result_path)
 
         elif online_info_file.filename.startswith("OnlineInfo"):
@@ -386,6 +396,16 @@ def upload_file():
                 total_time = ws[f"G{i}"].value
                 if total_time is not None:
                     ws[f"G{i}"] = f"{total_time}"  # Prepend apostrophe to store as text
+
+            # Add "EasyTest秒數" formula in H2:H{max_row}
+            ws["H1"] = "EasyTest秒數"
+            for i in range(2, max_row + 1):
+                total_seconds = f"G{i}"  # '總時數' 在 G 欄
+                formula_h = (
+                    f'=IFERROR(LEFT({total_seconds},FIND("時",{total_seconds})-1)*3600,0) + '
+                    f'IFERROR(MID({total_seconds},FIND("時",{total_seconds})+1,FIND("分",{total_seconds})-FIND("時",{total_seconds})-1)*60,0)'
+                )
+                ws[f"H{i}"] = formula_h
 
             wb.save(result_path)
             pass
