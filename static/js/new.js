@@ -7,6 +7,7 @@ const onlineInfoFileInput = document.getElementById("online-info-file");
 // 初始化時根據後端傳來的 show_captcha 決定按鈕狀態
 const showCaptcha = "{{ show_captcha|lower }}";
 submitButton.disabled = showCaptcha === "true";
+console.log("Initial showCaptcha:", showCaptcha); // 日誌：檢查初始狀態
 
 // 表單元素
 const form = document.querySelector(".upload-form");
@@ -20,9 +21,11 @@ window.onloadTurnstileCallback = function () {
         console.log(`Challenge Success ${token}`);
         submitButton.disabled = false;
         window.captchaToken = token;
-        console.log("CAPTCHA verified, waiting for user to submit"); // 日誌
+        console.log("CAPTCHA verified, button enabled, token stored"); // 日誌
       },
     });
+  } else {
+    console.log("No CAPTCHA container found, assuming session verified"); // 日誌
   }
 };
 
@@ -53,7 +56,7 @@ function handleFormSubmit() {
   if (window.captchaToken) {
     formData.append("cf-turnstile-response", window.captchaToken);
     console.log("Appending CAPTCHA token:", window.captchaToken); // 日誌
-    delete window.captchaToken; // 使用後清除 token
+    delete window.captchaToken;
   } else {
     console.log("No CAPTCHA token, relying on session"); // 日誌
   }
@@ -84,7 +87,7 @@ function handleFormSubmit() {
       console.log("File downloaded successfully"); // 日誌
     })
     .catch((error) => {
-      console.error("Error:", error);
+      console.error("Upload error:", error);
       alert("文件上傳失敗，請再試一次。原因是：" + error.message);
     });
 }
