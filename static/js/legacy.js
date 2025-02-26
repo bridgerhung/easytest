@@ -4,18 +4,17 @@ const fileInput = document.getElementById("fileInput");
 const imageModal = document.getElementById("imageModal");
 const modalImage = document.getElementById("modalImage");
 
-let captchaVerified = false; // Track CAPTCHA status
-let captchaToken = ""; // Store CAPTCHA token
-
+// Turnstile 渲染函數，只有在需要 CAPTCHA 時執行
 window.onloadTurnstileCallback = function () {
-  turnstile.render("#cf-turnstile", {
-    sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
-    callback: function (token) {
-      console.log(`Challenge Success ${token}`);
-      captchaVerified = true; // Set CAPTCHA as verified
-      captchaToken = token; // Store CAPTCHA token
-    },
-  });
+  if (document.getElementById("cf-turnstile")) { // 檢查是否存在 CAPTCHA 容器
+    turnstile.render("#cf-turnstile", {
+      sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
+      callback: function (token) {
+        console.log(`Challenge Success ${token}`);
+        handleFileUpload(fileInput.files[0], token); // 驗證成功後立即上傳
+      },
+    });
+  }
 };
 
 // 初始化拖放功能
@@ -56,43 +55,18 @@ function handleDrop(e) {
   const file = dt.files[0];
   if (!file) return;
 
-  const formData = new FormData();
-  formData.append("file", file);
-
-  fetch("/legacy/upload", {
-    method: "POST",
-    body: formData,
-  })
-    .then((response) => response.blob())
-    .then((blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = file.name.replace(/\.[^/.]+$/, "") + "-count.xlsx";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-    });
+  handleFileUpload(file); // 直接處理檔案上傳
 }
 
 // 點擊上傳區域時觸發檔案選取
 dropZone.addEventListener("click", () => {
-  if (!captchaVerified) {
-    // Check if CAPTCHA is verified
-    alert("請先完成人機驗證 (CAPTCHA)");
-    return; // Prevent file selection if CAPTCHA not verified
-  }
-  fileInput.click(); // Proceed to file selection if verified
+  fileInput.click(); // 直接觸發檔案選擇，無需檢查 CAPTCHA
 });
 
 // 處理檔案選取變更
 fileInput.addEventListener("change", (e) => {
   if (e.target.files.length) {
-    handleFileUpload(e.target.files[0]);
+    handleFileUpload(e.target.files[0]); // 直接處理檔案上傳
   }
 });
 
@@ -120,17 +94,13 @@ window.onclick = function (event) {
   }
 };
 
-// 處理檔案上傳（示例函數，需根據實際需求實現）
-function handleFileUpload(file) {
-  if (!captchaVerified) {
-    // Ensure CAPTCHA is verified
-    alert("請先完成人機驗證 (CAPTCHA)");
-    return; // Prevent file upload if CAPTCHA not verified
-  }
-
+// 處理檔案上傳
+function handleFileUpload(file, token = null) {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("cf-turnstile-response", captchaToken); // Append CAPTCHA token
+  if (token) {
+    formData.append("cf-turnstile-response", token); // 僅在首次驗證時附加 token
+  }
 
   fetch("/legacy/upload", {
     method: "POST",
