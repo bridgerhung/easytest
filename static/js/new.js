@@ -1,5 +1,3 @@
-// const dropZone = document.getElementById("dropZone");
-// const fileInput = document.getElementById("fileInput");
 const submitButton = document.querySelector(".button");
 const historyFileInput = document.getElementById("history-file");
 const onlineInfoFileInput = document.getElementById("online-info-file");
@@ -7,7 +5,7 @@ const onlineInfoFileInput = document.getElementById("online-info-file");
 // 初始化時根據後端傳來的 show_captcha 決定按鈕狀態
 const showCaptcha = "{{ show_captcha|lower }}";
 submitButton.disabled = showCaptcha === "true";
-console.log("Initial showCaptcha:", showCaptcha); // 日誌：檢查初始狀態
+console.log("Initial showCaptcha:", showCaptcha);
 
 // 表單元素
 const form = document.querySelector(".upload-form");
@@ -21,31 +19,30 @@ window.onloadTurnstileCallback = function () {
         console.log(`Challenge Success ${token}`);
         submitButton.disabled = false;
         window.captchaToken = token;
-        console.log("CAPTCHA verified, button enabled, token stored"); // 日誌
+        console.log("CAPTCHA verified, button enabled, token stored");
       },
     });
   } else {
-    console.log("No CAPTCHA container found, assuming session verified"); // 日誌
+    console.log("No CAPTCHA container found, assuming session verified");
   }
 };
 
 // Handle form submission
 form.addEventListener("submit", function (e) {
-  e.preventDefault(); // 防止表單自動提交
-  console.log("Form submit event triggered by user"); // 日誌
+  e.preventDefault();
+  console.log("Form submit event triggered by user");
   handleFormSubmit();
 });
 
 // 處理表單提交的函數
 function handleFormSubmit() {
-  console.log("handleFormSubmit called"); // 日誌
+  console.log("handleFormSubmit called");
 
-  // 檢查檔案是否有效
   if (!historyFileInput.files[0] || !onlineInfoFileInput.files[0]) {
     console.log("Files missing:", {
       history: historyFileInput.files[0],
       online: onlineInfoFileInput.files[0],
-    }); // 日誌
+    });
     alert("請選擇兩個檔案後再提交！");
     return;
   }
@@ -55,10 +52,10 @@ function handleFormSubmit() {
   formData.append("online_info_file", onlineInfoFileInput.files[0]);
   if (window.captchaToken) {
     formData.append("cf-turnstile-response", window.captchaToken);
-    console.log("Appending CAPTCHA token:", window.captchaToken); // 日誌
+    console.log("Appending CAPTCHA token:", window.captchaToken);
     delete window.captchaToken;
   } else {
-    console.log("No CAPTCHA token, relying on session"); // 日誌
+    console.log("No CAPTCHA token, relying on session");
   }
 
   fetch("/new/upload", {
@@ -66,7 +63,7 @@ function handleFormSubmit() {
     body: formData,
   })
     .then((response) => {
-      console.log("Response status:", response.status); // 日誌
+      console.log("Response status:", response.status);
       if (!response.ok) {
         return response.text().then((text) => {
           throw new Error(`Upload failed: ${text}`);
@@ -78,13 +75,12 @@ function handleFormSubmit() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download =
-        historyFileInput.files[0].name.replace(/\.[^/.]+$/, "") + "-count.xlsx";
+      a.download = historyFileInput.files[0].name.replace(/\.[^/.]+$/, "") + "-count.xlsx";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      console.log("File downloaded successfully"); // 日誌
+      console.log("File downloaded successfully");
     })
     .catch((error) => {
       console.error("Upload error:", error);
@@ -92,22 +88,17 @@ function handleFormSubmit() {
     });
 }
 
-// Update footer year
+// 其他功能保持不變
 document.getElementById("year").textContent = new Date().getFullYear();
-
-/* Disclaimer Modal Functionality */
 function openDisclaimer(event) {
   event.preventDefault();
   const disclaimerModal = document.getElementById("disclaimerModal");
   disclaimerModal.style.display = "flex";
 }
-
 function closeDisclaimer() {
   const disclaimerModal = document.getElementById("disclaimerModal");
   disclaimerModal.style.display = "none";
 }
-
-/* Image Modal Functionality */
 function openImageModal(src, alt) {
   const imageModal = document.getElementById("imageModal");
   const modalImage = document.getElementById("modalImage");
@@ -115,22 +106,13 @@ function openImageModal(src, alt) {
   modalImage.alt = alt;
   imageModal.style.display = "flex";
 }
-
 function closeImageModal() {
   const imageModal = document.getElementById("imageModal");
   imageModal.style.display = "none";
 }
-
-/* Close modals when clicking outside */
 window.addEventListener("click", function (event) {
   const disclaimerModal = document.getElementById("disclaimerModal");
   const imageModal = document.getElementById("imageModal");
-
-  if (event.target === disclaimerModal) {
-    closeDisclaimer();
-  }
-
-  if (event.target === imageModal) {
-    closeImageModal();
-  }
+  if (event.target === disclaimerModal) closeDisclaimer();
+  if (event.target === imageModal) closeImageModal();
 });
