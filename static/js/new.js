@@ -19,7 +19,7 @@ window.onloadTurnstileCallback = function () {
       callback: function (token) {
         console.log(`Challenge Success ${token}`);
         submitButton.disabled = false; // 啟用提交按鈕
-        handleFormSubmit(token); // 驗證成功後直接提交
+        window.captchaToken = token; // 儲存 token 以供後續提交使用
       },
     });
   }
@@ -71,16 +71,23 @@ window.addEventListener("click", function (event) {
 // Handle form submission
 form.addEventListener("submit", function (e) {
   e.preventDefault(); // Prevent default form submission
-  handleFormSubmit(); // 直接處理提交
+  handleFormSubmit(); // 處理提交
 });
 
 // 處理表單提交的函數
-function handleFormSubmit(token = null) {
+function handleFormSubmit() {
+  // 檢查檔案是否有效
+  if (!historyFileInput.files[0] || !onlineInfoFileInput.files[0]) {
+    alert("請選擇兩個檔案後再提交！");
+    return;
+  }
+
   const formData = new FormData();
   formData.append("history_file", historyFileInput.files[0]);
   formData.append("online_info_file", onlineInfoFileInput.files[0]);
-  if (token) {
-    formData.append("cf-turnstile-response", token); // 僅在首次驗證時附加 token
+  if (window.captchaToken) {
+    formData.append("cf-turnstile-response", window.captchaToken); // 僅在首次驗證時附加 token
+    delete window.captchaToken; // 使用後清除 token
   }
 
   fetch("/new/upload", {
