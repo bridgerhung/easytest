@@ -24,7 +24,6 @@
         dataLayer.push(arguments);
       }
       gtag("js", new Date());
-
       gtag("config", "G-6DQ663S55E");
     </script>
     <meta property="og:title" content="EasyTest & MyET 秒數計算服務" />
@@ -84,12 +83,9 @@
         />
         <button class="btn">選擇檔案</button>
       </div>
-      <!-- Ensure there's only one Turnstile container with the correct ID -->
-      <div
-        id="cf-turnstile"
-        class="cf-turnstile"
-        data-callback="javascriptCallback"
-      ></div>
+      <!-- 條件性顯示 CAPTCHA 或提示文字 -->
+      {% if show_captcha %}
+      <div id="cf-turnstile" class="cf-turnstile" data-callback="javascriptCallback"></div>
       {% else %}
       <p>您已驗證完成，可直接上傳檔案無需再次解決 CAPTCHA。</p>
       {% endif %}
@@ -120,7 +116,7 @@
 
       <!-- Image Modal -->
       <div id="imageModal" class="image-modal">
-        <span class="close" onclick="closeImageModal()">&times;</span>
+        <span class="close" onclick="closeImageModal()">×</span>
         <img class="modal-content" id="modalImage" alt="Enlarged Image" />
       </div>
     </div>
@@ -144,7 +140,7 @@
     <!-- Disclaimer Modal -->
     <div id="disclaimerModal" class="disclaimer-modal">
       <div class="disclaimer-content">
-        <span class="close" onclick="closeDisclaimer()">&times;</span>
+        <span class="close" onclick="closeDisclaimer()">×</span>
         <h2>免責聲明</h2>
         <p>本人不為計算出來的成績負責，您應該負起成績的核對和計算責任，</p>
         <p>本服務僅提供輔助。</p>
