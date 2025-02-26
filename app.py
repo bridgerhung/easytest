@@ -289,50 +289,43 @@ def upload_file():
             result_df.insert(5, "EasyTest秒數", "")  # 插入空白欄位
             result_df.insert(6, "成績", "")  # 插入空白欄位
     
-            # Save to result file
+            # Save to result file starting from A1
             result_filename = 'result_stud_list.xlsx'
             result_path = os.path.join(RESULT_FOLDER, result_filename)
-            result_df.to_excel(result_path, index=False, startrow=4)  # 從第 5 行開始寫入
+            result_df.to_excel(result_path, index=False, startrow=1)  # 從第 2 行開始寫入資料
     
             # Use openpyxl to adjust headers and add formulas
             wb = load_workbook(result_path)
             ws = wb.active
     
-            # Write headers at row 5 (A5:G5)
-            ws["A5"] = "班級"
-            ws["B5"] = "學號"
-            ws["C5"] = "姓名"
-            ws["D5"] = "修別"
-            ws["E5"] = "EasyTest總時數"
-            ws["F5"] = "EasyTest秒數"
-            ws["G5"] = "成績"
+            # Write headers at row 1 (A1:G1)
+            ws["A1"] = "班級"
+            ws["B1"] = "學號"
+            ws["C1"] = "姓名"
+            ws["D1"] = "修別"
+            ws["E1"] = "EasyTest總時數"
+            ws["F1"] = "EasyTest秒數"
+            ws["G1"] = "成績"
     
-            # Preserve "EasyTest總時數" as text in E6:E{max_row}
+            # Preserve "EasyTest總時數" as text and add formulas from row 2 (A2:G{max_row})
             max_row = ws.max_row
-            for i in range(6, max_row + 1):
+            for i in range(2, max_row + 1):  # 從第 2 行開始
                 total_time = ws[f"E{i}"].value
                 if total_time is not None:
                     ws[f"E{i}"] = f"{total_time}"  # 儲存為文字
     
-            # Add "EasyTest秒數" formula in F6:F{max_row}
-            for i in range(6, max_row + 1):
-                total_seconds = f"E{i}"
+                total_seconds = f"E{i}"  # 總時數在 E 欄
                 formula_f = (
                     f'=IFERROR(LEFT({total_seconds},FIND("時",{total_seconds})-1)*3600,0) + '
                     f'IFERROR(MID({total_seconds},FIND("時",{total_seconds})+1,FIND("分",{total_seconds})-FIND("時",{total_seconds})-1)*60,0)'
                 )
                 ws[f"F{i}"] = formula_f
     
-            # Add "成績" formula in G6:G{max_row}
-            for i in range(6, max_row + 1):
-                seconds_cell = f"F{i}"
+                seconds_cell = f"F{i}"  # EasyTest秒數在 F 欄
                 formula_g = (
                     f'=IF({seconds_cell}>=72000,10,IF({seconds_cell}>0,{seconds_cell}/72000*10,0))'
                 )
                 ws[f"G{i}"] = formula_g
-    
-            # 刪除前 4 列 (A1:G4)
-            ws.delete_rows(1, 4)  # 從第 1 行開始刪除 4 行
     
             wb.save(result_path)
         
