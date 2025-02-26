@@ -7,11 +7,15 @@ from threading import Thread
 from openpyxl import load_workbook
 from werkzeug.utils import secure_filename
 import requests
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 RESULT_FOLDER = 'results'
 TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY")  # Use environment variables
+app.secret_key = '@Your_secret_Key'
+
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=60)
 
 # Create directories
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -41,7 +45,8 @@ def homepage():
 
 @app.route('/legacy')
 def legacy():
-    return render_template('legacy.html')
+    show_captcha = 'captcha_verified' not in session or not session['captcha_verified']
+    return render_template('legacy.html', show_captcha=show_captcha)
 
 @app.route('/legacy/upload', methods=['POST'])
 def legacy_upload():
@@ -179,25 +184,33 @@ def legacy_upload():
 
 @app.route('/new')
 def new():
-    return render_template('new.html')
+    show_captcha = 'captcha_verified' not in session or not session['captcha_verified']
+    return render_template('new.html', show_captcha=show_captcha)
 
 @app.route('/new/upload', methods=['POST'])
 def upload_file():
-    captcha_token = request.form.get('cf-turnstile-response')
-    if not captcha_token:
-        return {"error": "CAPTCHA token is missing"}, 400
+    if 'captcha_verified' in session and session['captcha_verified']:
+        pass
+    else:
+        captcha_token = request.form.get('cf-turnstile-response')
+        if not captcha_token:
+            return {"error": "CAPTCHA token is missing"}, 400
 
-    verification_url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
-    payload = {
-        "secret": TURNSTILE_SECRET_KEY,
-        "response": captcha_token,
-        "remoteip": request.remote_addr
-    }
-    response = requests.post(verification_url, data=payload)
-    result = response.json()
+        verification_url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+        payload = {
+            "secret": TURNSTILE_SECRET_KEY,
+            "response": captcha_token,
+            "remoteip": request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('HTTP_X_REAL_IP', request.environ.get('REMOTE_ADDR')))
+        }
+        response = requests.post(verification_url, data=payload)
+        result = response.json()
 
-    if not result.get("success"):
-        return {"error": "CAPTCHA validation failed"}, 403
+        if not result.get("success"):
+            return {"error": "CAPTCHA validation failed"}, 403
+
+        # Set the flag
+        session['captcha_verified'] = True
+        session.permanent = True
 
     # Check if both files are present
     if 'history_file' not in request.files or 'online_info_file' not in request.files:
