@@ -80,11 +80,12 @@
         </div>
 
         <form
-          class="upload-form"
-          action="/new/upload"
-          method="post"
-          enctype="multipart/form-data"
-        >
+            class="upload-form"
+            action="/new/upload"
+            method="post"
+            enctype="multipart/form-data"
+            onsubmit="return false;" <!-- 新增此屬性 -->
+          >
           <div class="file-upload-container">
             <div class="file-upload-block">
               <label for="history-file" class="file-label">
