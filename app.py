@@ -51,8 +51,7 @@ def legacy():
 @app.route('/legacy/upload', methods=['POST'])
 def legacy_upload():
     if 'captcha_verified' in session and session['captcha_verified']:
-        # 跳過 CAPTCHA 驗證
-        pass
+        pass  # 跳過 CAPTCHA 驗證
     else:
         captcha_token = request.form.get('cf-turnstile-response')
         if not captcha_token:
@@ -70,9 +69,10 @@ def legacy_upload():
         if not result.get("success"):
             return {"error": "CAPTCHA validation failed"}, 403
 
-        # 驗證成功，設定 session 旗標
         session['captcha_verified'] = True
         session.permanent = True
+
+    # 原有檔案處理邏輯...
 
     if 'file' not in request.files:
         return {"error": "請上傳檔案"}, 400
