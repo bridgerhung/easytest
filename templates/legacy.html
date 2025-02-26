@@ -90,6 +90,9 @@
         class="cf-turnstile"
         data-callback="javascriptCallback"
       ></div>
+      {% else %}
+      <p>您已驗證完成，可直接上傳檔案無需再次解決 CAPTCHA。</p>
+      {% endif %}
       <script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
         defer
