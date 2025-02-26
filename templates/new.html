@@ -5,41 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EasyTest & MyET 合併計算服務</title>
     <link rel="icon" type="image/x-icon" href="static/favicon.ico" />
-    <!-- 在 <head> 中聲明 favicon-32x32.png，提供搜尋引擎與使用者預覽 -->
     <link
       rel="icon"
       type="image/png"
       sizes="32x32"
       href="/static/favicon-32x32.png"
     />
-    <!-- Google tag (gtag.js) -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-6DQ663S55E"
-    ></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6DQ663S55E"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
+      function gtag() { dataLayer.push(arguments); }
       gtag("js", new Date());
       gtag("config", "G-6DQ663S55E");
     </script>
     <meta property="og:title" content="EasyTest & MyET 分數合併計算服務" />
-    <meta
-      property="og:description"
-      content="請上傳 EasyTest 的 csv 檔案與 MyET 的 xlsx 檔案，或僅上傳 EasyTest csv 與學生名單 xlsx。全自動合併與計算服務。"
-    />
+    <meta property="og:description" content="請上傳 EasyTest 的 csv 檔案與 MyET 的 xlsx 檔案，或僅上傳 EasyTest csv 與學生名單 xlsx。全自動合併與計算服務。" />
     <meta property="og:image" content="/static/logo.png" />
     <meta property="og:url" content="https://csv.brid.pw" />
     <meta property="og:type" content="website" />
-    <style></style>
-
-    <!-- Add Font Awesome for icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
     <link rel="stylesheet" href="static/css/new.css" />
   </head>
   <body>
@@ -56,7 +40,6 @@
             </h1>
           </div>
         </div>
-
         <div class="upload-section">
           <p>
             請根據您的需求上傳檔案以進行資料處理：<br />
@@ -70,7 +53,6 @@
             <strong>*_Stud_List.xlsx</strong>，系統將根據學生名單計算總時數與成績。
           </p>
         </div>
-
         <div class="instructions">
           <p>
             請注意，將資料貼到其他試算表時記得選擇
@@ -78,68 +60,40 @@
             否則轉移到其他電腦時可能會發生錯誤。
           </p>
         </div>
-
-        <form
-            class="upload-form"
-            action="/new/upload"
-            method="post"
-            enctype="multipart/form-data"
-            onsubmit="return false;" <!-- 新增此屬性 -->
-          >
+        <form class="upload-form" method="post" enctype="multipart/form-data">
           <div class="file-upload-container">
             <div class="file-upload-block">
               <label for="history-file" class="file-label">
                 <i class="fas fa-file-csv"></i>
                 EasyTest 成績檔案 (.csv)
               </label>
-              <input
-                id="history-file"
-                type="file"
-                name="history_file"
-                accept=".csv"
-                required
-              />
-              <small class="file-hint"
-                >請上傳從 EasyTest 下載的 history*.csv 檔案，包含「使用者帳號」與「總時數」。
+              <input id="history-file" type="file" name="history_file" accept=".csv" required />
+              <small class="file-hint">
+                請上傳從 EasyTest 下載的 history*.csv 檔案，包含「使用者帳號」與「總時數」。
               </small>
             </div>
-
             <div class="file-upload-block">
               <label for="online-info-file" class="file-label">
                 <i class="fas fa-file-excel"></i>
                 MyET 或學生名單檔案 (.xlsx)
               </label>
-              <input
-                id="online-info-file"
-                type="file"
-                name="online_info_file"
-                accept=".xlsx"
-                required
-              />
-              <small class="file-hint"
-                >請上傳 MyET 的 OnlineInfo_*.xlsx / ScoreReport_*.xlsx，或學生名單 *_Stud_List.xlsx。
+              <input id="online-info-file" type="file" name="online_info_file" accept=".xlsx" required />
+              <small class="file-hint">
+                請上傳 MyET 的 OnlineInfo_*.xlsx / ScoreReport_*.xlsx，或學生名單 *_Stud_List.xlsx。
               </small>
             </div>
           </div>
-
           {% if show_captcha %}
           <div id="cf-turnstile" class="cf-turnstile"></div>
           {% else %}
           <p>您已驗證完成，可直接上傳檔案無需再次解決 CAPTCHA。</p>
           {% endif %}
-
           <div class="button-container">
             <button type="submit" class="button">開始轉換</button>
           </div>
         </form>
       </div>
-
-      <script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
-        defer
-      ></script>
-
-      <!-- Replace existing footer with standardized version -->
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" defer></script>
       <footer class="footer">
         <div class="footer-content">
           <p class="copyright">© <span id="year"></span> Bridger Hung</p>
@@ -157,25 +111,14 @@
         </div>
       </footer>
     </div>
-
     <div class="images">
-      <img
-        src="static/SaRsSDo.png"
-        alt="貼上值"
-        onclick="openImageModal(this.src, this.alt)"
-      />
-      <img
-        src="static/RWvWTmk.png"
-        alt="操作示意"
-        onclick="openImageModal(this.src, this.alt)"
-      />
+      <img src="static/SaRsSDo.png" alt="貼上值" onclick="openImageModal(this.src, this.alt)" />
+      <img src="static/RWvWTmk.png" alt="操作示意" onclick="openImageModal(this.src, this.alt)" />
     </div>
-
     <div id="imageModal" class="modal">
       <span class="close" onclick="closeImageModal()">×</span>
       <img class="modal-content" id="modalImage" />
     </div>
-
     <div id="disclaimerModal" class="disclaimer-modal">
       <div class="disclaimer-content">
         <span class="close" onclick="closeDisclaimer()">×</span>
