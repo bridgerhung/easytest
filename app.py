@@ -243,7 +243,7 @@ def upload_file():
         online_info_path = os.path.join(UPLOAD_FOLDER, online_info_filename)
         history_file.save(history_path)
         online_info_file.save(online_info_path)
-
+    
         # Load history*.csv
         try:
             history_df = pd.read_csv(history_path, encoding='utf-8')
@@ -252,16 +252,16 @@ def upload_file():
                 history_df = pd.read_csv(history_path, encoding='big5')
             except UnicodeDecodeError:
                 history_df = pd.read_csv(history_path, encoding='ISO-8859-1')
-
+    
         required_history_columns = ["使用者帳號", "總時數"]
         for col in required_history_columns:
             if col not in history_df.columns:
                 return f"History 檔案缺少必要的欄位: {col}", 400
-
+    
         # 只保留需要的欄位
         history_df = history_df[["使用者帳號", "總時數"]]
         history_df['總時數'] = history_df['總時數'].astype(str)  # 確保總時數為字串格式
-
+    
         # Process based on file type
         if online_info_filename.endswith("Stud_List.xlsx"):
             # Process *_Stud_List.xlsx
@@ -273,7 +273,7 @@ def upload_file():
                 names=["班級", "學號", "姓名", "修別"]  # 自訂標題名稱
             )
             stud_df = stud_df.dropna(subset=["學號"])  # 移除學號為空的行
-
+    
             # Merge with history_df using left join (stud_df as base table)
             merged_df = pd.merge(
                 stud_df,
@@ -282,22 +282,22 @@ def upload_file():
                 right_on="使用者帳號",
                 how="left"
             )
-
+    
             # Select and prepare result dataframe
             result_df = merged_df[["班級", "學號", "姓名", "修別", "總時數"]].copy()
             result_df.columns = ["班級", "學號", "姓名", "修別", "EasyTest總時數"]  # 重命名為輸出標題
             result_df.insert(5, "EasyTest秒數", "")  # 插入空白欄位
             result_df.insert(6, "成績", "")  # 插入空白欄位
-
+    
             # Save to result file
             result_filename = 'result_stud_list.xlsx'
             result_path = os.path.join(RESULT_FOLDER, result_filename)
             result_df.to_excel(result_path, index=False, startrow=4)  # 從第 5 行開始寫入
-
+    
             # Use openpyxl to adjust headers and add formulas
             wb = load_workbook(result_path)
             ws = wb.active
-
+    
             # Write headers at row 5 (A5:G5)
             ws["A5"] = "班級"
             ws["B5"] = "學號"
@@ -306,31 +306,34 @@ def upload_file():
             ws["E5"] = "EasyTest總時數"
             ws["F5"] = "EasyTest秒數"
             ws["G5"] = "成績"
-
+    
             # Preserve "EasyTest總時數" as text in E6:E{max_row}
             max_row = ws.max_row
             for i in range(6, max_row + 1):
                 total_time = ws[f"E{i}"].value
                 if total_time is not None:
                     ws[f"E{i}"] = f"{total_time}"  # 儲存為文字
-
+    
             # Add "EasyTest秒數" formula in F6:F{max_row}
             for i in range(6, max_row + 1):
-                total_seconds = f"E{i}"  # 總時數在 E 欄
+                total_seconds = f"E{i}"
                 formula_f = (
                     f'=IFERROR(LEFT({total_seconds},FIND("時",{total_seconds})-1)*3600,0) + '
                     f'IFERROR(MID({total_seconds},FIND("時",{total_seconds})+1,FIND("分",{total_seconds})-FIND("時",{total_seconds})-1)*60,0)'
                 )
                 ws[f"F{i}"] = formula_f
-
+    
             # Add "成績" formula in G6:G{max_row}
             for i in range(6, max_row + 1):
-                seconds_cell = f"F{i}"  # EasyTest秒數在 F 欄
+                seconds_cell = f"F{i}"
                 formula_g = (
                     f'=IF({seconds_cell}>=72000,10,IF({seconds_cell}>0,{seconds_cell}/72000*10,0))'
                 )
                 ws[f"G{i}"] = formula_g
-
+    
+            # 刪除前 4 列 (A1:G4)
+            ws.delete_rows(1, 4)  # 從第 1 行開始刪除 4 行
+    
             wb.save(result_path)
         
         elif online_info_file.filename.startswith("ScoreReport_"):
