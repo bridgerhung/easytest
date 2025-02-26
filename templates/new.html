@@ -23,13 +23,12 @@
         dataLayer.push(arguments);
       }
       gtag("js", new Date());
-
       gtag("config", "G-6DQ663S55E");
     </script>
     <meta property="og:title" content="EasyTest & MyET 分數合併計算服務" />
     <meta
       property="og:description"
-      content="請同時上傳 MyET 的 xlsx 檔案 以及 EasyTest 的 csv 檔案。已升級為全自動合併服務"
+      content="請上傳 EasyTest 的 csv 檔案與 MyET 的 xlsx 檔案，或僅上傳 EasyTest csv 與學生名單 xlsx。全自動合併與計算服務。"
     />
     <meta property="og:image" content="/static/logo.png" />
     <meta property="og:url" content="https://csv.brid.pw" />
@@ -60,12 +59,16 @@
 
         <div class="upload-section">
           <p>
-            請同時上傳
-            <strong>MyET 的 xlsx 檔案 (Onlineinfo & ScoreReport) </strong> 以及
-            <strong>EasyTest 的 csv 檔</strong>
-            <br />本系統將為您自動計算秒數，時數並轉換為 Excel 檔案。
+            請根據您的需求上傳檔案以進行資料處理：<br />
+            <strong>EasyTest 的 csv 檔案 (history*.csv)</strong> 搭配
+            <strong>MyET 的 xlsx 檔案 (OnlineInfo_*.xlsx 或 ScoreReport_*.xlsx)</strong>，<br />
+            或搭配 <strong>學生名單 (*_Stud_List.xlsx)</strong>。
           </p>
-          <p>已升級為全自動合併服務，無需再手動輸入和匹配EasyTest成績。</p>
+          <p>
+            本系統將為您自動計算秒數與時數，並轉換為 Excel 檔案。<br />
+            若僅使用 EasyTest 的助教，可上傳 <strong>history*.csv</strong> 與
+            <strong>*_Stud_List.xlsx</strong>，系統將根據學生名單計算總時數與成績。
+          </p>
         </div>
 
         <div class="instructions">
@@ -74,7 +77,6 @@
             <span class="highlight">僅貼上值</span><br />
             否則轉移到其他電腦時可能會發生錯誤。
           </p>
-          
         </div>
 
         <form
@@ -97,14 +99,14 @@
                 required
               />
               <small class="file-hint"
-                >請上傳從 EasyTest 下載的 history.csv 檔案
+                >請上傳從 EasyTest 下載的 history*.csv 檔案，包含「使用者帳號」與「總時數」。
               </small>
             </div>
 
             <div class="file-upload-block">
               <label for="online-info-file" class="file-label">
                 <i class="fas fa-file-excel"></i>
-                MyET 成績檔案 (.xlsx)
+                MyET 或學生名單檔案 (.xlsx)
               </label>
               <input
                 id="online-info-file"
@@ -114,8 +116,7 @@
                 required
               />
               <small class="file-hint"
-                >請上傳從 MyET 下載的 Excel 檔案 (Onlineinfo.xlsx 或
-                ScoreReport.xlsx)
+                >請上傳 MyET 的 OnlineInfo_*.xlsx / ScoreReport_*.xlsx，或學生名單 *_Stud_List.xlsx。
               </small>
             </div>
           </div>
@@ -126,6 +127,7 @@
           </div>
         </form>
       </div>
+
       <script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
         defer
@@ -164,13 +166,13 @@
     </div>
 
     <div id="imageModal" class="modal">
-      <span class="close" onclick="closeImageModal()">&times;</span>
+      <span class="close" onclick="closeImageModal()">×</span>
       <img class="modal-content" id="modalImage" />
     </div>
 
     <div id="disclaimerModal" class="disclaimer-modal">
       <div class="disclaimer-content">
-        <span class="close" onclick="closeDisclaimer()">&times;</span>
+        <span class="close" onclick="closeDisclaimer()">×</span>
         <h2>免責聲明</h2>
         <p>本人不為計算出來的成績負責，您應該負起成績的核對和計算責任，</p>
         <p>本服務僅提供輔助。</p>
