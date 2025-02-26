@@ -121,7 +121,11 @@
             </div>
           </div>
 
+          {% if show_captcha %}
           <div id="cf-turnstile" class="cf-turnstile"></div>
+          {% else %}
+          <p>您已驗證完成，可直接上傳檔案無需再次解決 CAPTCHA。</p>
+          {% endif %}
           <div class="button-container">
             <button type="submit" class="button">開始轉換</button>
           </div>
@@ -132,6 +136,7 @@
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback"
         defer
       ></script>
+      {% if show_captcha %}
 
       <!-- Replace existing footer with standardized version -->
       <footer class="footer">
