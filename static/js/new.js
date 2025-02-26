@@ -1,30 +1,28 @@
 // const dropZone = document.getElementById("dropZone");
 // const fileInput = document.getElementById("fileInput");
 const submitButton = document.querySelector(".button"); // Existing submit button reference
-
 const historyFileInput = document.getElementById("history-file");
 const onlineInfoFileInput = document.getElementById("online-info-file");
 
-// Disable submit button initially
-submitButton.disabled = true;
+// 初始化時根據後端傳來的 show_captcha 決定按鈕狀態
+const showCaptcha = "{{ show_captcha|lower }}"; // 从 Flask 模板获取（注意大小写）
+submitButton.disabled = showCaptcha === "true"; // 若需要 CAPTCHA，按鈕初始禁用
 
-let captchaVerified = false;
-let captchaToken = "";
-
-// Disable form submission initially
+// 表單元素
 const form = document.querySelector(".upload-form");
-// const submitButton = form.querySelector('button[type="submit"]'); // Removed duplicate declaration
 
+// Turnstile 渲染函數，只有在需要 CAPTCHA 時執行
 window.onloadTurnstileCallback = function () {
-  turnstile.render("#cf-turnstile", {
-    sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
-    callback: function (token) {
-      console.log(`Challenge Success ${token}`);
-      captchaVerified = true;
-      captchaToken = token;
-      submitButton.disabled = false; // Enable submit button after CAPTCHA success
-    },
-  });
+  if (document.getElementById("cf-turnstile")) { // 檢查是否存在 CAPTCHA 容器
+    turnstile.render("#cf-turnstile", {
+      sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
+      callback: function (token) {
+        console.log(`Challenge Success ${token}`);
+        submitButton.disabled = false; // 啟用提交按鈕
+        handleFormSubmit(token); // 驗證成功後直接提交
+      },
+    });
+  }
 };
 
 // Update footer year
@@ -70,72 +68,20 @@ window.addEventListener("click", function (event) {
   }
 });
 
-/* Drag and Drop Functionality */
-
-// Open file dialog on drop zone click
-// dropZone.onclick = () => fileInput.click();
-
-// Handle file input change
-// fileInput.addEventListener("change", function (e) {
-//   if (this.files && this.files[0]) {
-//     if (!captchaVerified) {
-//       alert("請先完成人機驗證 (CAPTCHA)");
-//       return;
-//     }
-//     const formData = new FormData();
-//     formData.append(
-//       "history_file",
-//       document.getElementById("history-file").files[0]
-//     ); // Append EasyTest CSV file
-//     formData.append(
-//       "online_info_file",
-//       document.getElementById("online-info-file").files[0]
-//     ); // Append MyET XLSX file
-//     formData.append("cf-turnstile-response", captchaToken); // Include CAPTCHA token
-
-//     fetch("/new/upload", {
-//       method: "POST",
-//       body: formData,
-//     })
-//       .then((response) => {
-//         if (!response.ok) {
-//           throw new Error("Upload failed");
-//         }
-//         return response.blob();
-//       })
-//       .then((blob) => {
-//         const url = window.URL.createObjectURL(blob);
-//         const a = document.createElement("a");
-//         a.href = url;
-//         a.download =
-//           document
-//             .getElementById("history-file")
-//             .files[0].name.replace(/\.[^/.]+$/, "") + "-count.xlsx";
-//         document.body.appendChild(a);
-//         a.click();
-//         document.body.removeChild(a);
-//         window.URL.revokeObjectURL(url);
-//       })
-//       .catch((error) => {
-//         console.error("Error:", error);
-//         alert("文件上傳失敗，請再試一次。");
-//       });
-//   }
-// });
-
 // Handle form submission
 form.addEventListener("submit", function (e) {
   e.preventDefault(); // Prevent default form submission
+  handleFormSubmit(); // 直接處理提交
+});
 
-  if (!captchaVerified) {
-    alert("請先完成人機驗證 (CAPTCHA)");
-    return;
-  }
-
+// 處理表單提交的函數
+function handleFormSubmit(token = null) {
   const formData = new FormData();
   formData.append("history_file", historyFileInput.files[0]);
   formData.append("online_info_file", onlineInfoFileInput.files[0]);
-  formData.append("cf-turnstile-response", captchaToken); // Include CAPTCHA token
+  if (token) {
+    formData.append("cf-turnstile-response", token); // 僅在首次驗證時附加 token
+  }
 
   fetch("/new/upload", {
     method: "POST",
@@ -162,31 +108,4 @@ form.addEventListener("submit", function (e) {
       console.error("Error:", error);
       alert("文件上傳失敗，請再試一次。");
     });
-});
-
-// Remove drag-and-drop event listeners if not used
-// ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
-//   dropZone.addEventListener(eventName, preventDefaults, false);
-//   document.body.addEventListener(eventName, preventDefaults, false);
-// });
-
-// function preventDefaults(e) {
-//   e.preventDefault();
-//   e.stopPropagation();
-// }
-
-// ["dragenter", "dragover"].forEach((eventName) => {
-//   dropZone.addEventListener(eventName, highlight, false);
-// });
-
-// ["dragleave", "drop"].forEach((eventName) => {
-//   dropZone.addEventListener(eventName, unhighlight, false);
-// });
-
-// function highlight() {
-//   dropZone.classList.add("dragover");
-// }
-
-// function unhighlight() {
-//   dropZone.classList.remove("dragover");
-// }
+}
