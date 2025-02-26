@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, after_this_request, redirect, url_for
+from flask import Flask, render_template, request, send_file, after_this_request, redirect, url_for, session
 import os
 import time
 import pandas as pd
@@ -7,17 +7,15 @@ from threading import Thread
 from openpyxl import load_workbook
 from werkzeug.utils import secure_filename
 import requests
-from datetime import datetime, timedelta
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 RESULT_FOLDER = 'results'
-TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY")  # Use environment variables
+TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY")
 app.secret_key = '@Your_secret_Key'
 
-app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=60)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
 
-# Create directories
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
