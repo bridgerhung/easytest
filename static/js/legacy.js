@@ -11,7 +11,8 @@ window.onloadTurnstileCallback = function () {
       sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
       callback: function (token) {
         console.log(`Challenge Success ${token}`);
-        handleFileUpload(fileInput.files[0], token); // 驗證成功後立即上傳
+        // 不直接調用 handleFileUpload，而是儲存 token 或等待使用者操作
+        window.captchaToken = token; // 儲存 token 以供後續使用
       },
     });
   }
@@ -55,51 +56,36 @@ function handleDrop(e) {
   const file = dt.files[0];
   if (!file) return;
 
-  handleFileUpload(file); // 直接處理檔案上傳
+  handleFileUpload(file); // 拖放時觸發上傳
 }
 
 // 點擊上傳區域時觸發檔案選取
 dropZone.addEventListener("click", () => {
-  fileInput.click(); // 直接觸發檔案選擇，無需檢查 CAPTCHA
+  fileInput.click(); // 直接觸發檔案選擇
 });
 
 // 處理檔案選取變更
 fileInput.addEventListener("change", (e) => {
   if (e.target.files.length) {
-    handleFileUpload(e.target.files[0]); // 直接處理檔案上傳
+    handleFileUpload(e.target.files[0]); // 選擇檔案後觸發上傳
   }
 });
 
 // 初始化拖放
 initializeDragAndDrop();
 
-// 開啟圖片模態框
-function openImageModal(src) {
-  const imageModal = document.getElementById("imageModal");
-  const modalImage = document.getElementById("modalImage");
-  modalImage.src = src;
-  imageModal.style.display = "flex";
-}
-
-// 關閉圖片模態框
-function closeImageModal() {
-  const imageModal = document.getElementById("imageModal");
-  imageModal.style.display = "none";
-}
-
-// 點擊模態框外部區域關閉
-window.onclick = function (event) {
-  if (event.target == imageModal) {
-    imageModal.style.display = "none";
-  }
-};
-
 // 處理檔案上傳
-function handleFileUpload(file, token = null) {
+function handleFileUpload(file) {
+  if (!file) {
+    // 若檔案為空，不執行上傳，避免錯誤提示
+    return;
+  }
+
   const formData = new FormData();
   formData.append("file", file);
-  if (token) {
-    formData.append("cf-turnstile-response", token); // 僅在首次驗證時附加 token
+  if (window.captchaToken) {
+    formData.append("cf-turnstile-response", window.captchaToken); // 附加 token（若存在）
+    delete window.captchaToken; // 使用後清除 token，確保下次重新驗證
   }
 
   fetch("/legacy/upload", {
