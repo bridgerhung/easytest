@@ -283,16 +283,16 @@ def upload_file():
                 how="left"
             )
     
-            # Select and prepare result dataframe (only data, no header as data)
+            # Select and prepare result dataframe
             result_df = merged_df[["班級", "學號", "姓名", "修別", "總時數"]].copy()
-            result_df.columns = ["班級", "學號", "姓名", "修別", "EasyTest總時數"]  # 保持標題名稱用於 openpyxl
+            result_df.columns = ["班級", "學號", "姓名", "修別", "EasyTest總時數"]  # 重命名為輸出標題
             result_df.insert(5, "EasyTest秒數", "")  # 插入空白欄位
             result_df.insert(6, "成績", "")  # 插入空白欄位
     
-            # Save to result file starting from A2 (data only, no index)
+            # Save to result file starting from A1
             result_filename = 'result_stud_list.xlsx'
             result_path = os.path.join(RESULT_FOLDER, result_filename)
-            result_df.to_excel(result_path, index=False, header=False, startrow=1)  # 從第 2 行開始寫入資料，無標題
+            result_df.to_excel(result_path, index=False, startrow=1)  # 從第 2 行開始寫入資料
     
             # Use openpyxl to adjust headers and add formulas
             wb = load_workbook(result_path)
