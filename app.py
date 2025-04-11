@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, session, render_template, after_this_request
+from flask import Flask, request, send_file, session, render_template, after_this_request, jsonify
 import os
 import time
 import pandas as pd
@@ -15,6 +15,7 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.config['PERMANENT_SESSION_LIFETIME'] = SESSION_LIFETIME
 
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
@@ -30,11 +31,13 @@ def home():
 
 @app.route('/new')
 def new():
-    return render_template("new.html")
+    show_captcha = 'captcha_verified' not in session or not session['captcha_verified']
+    return render_template('new.html', show_captcha=show_captcha)
 
 @app.route('/legacy')
 def legacy():
-    return render_template("legacy.html")
+    show_captcha = 'captcha_verified' not in session or not session['captcha_verified']
+    return render_template('legacy.html', show_captcha=show_captcha)
 
 @app.route('/new/upload', methods=['POST'])
 def upload_file():
@@ -173,7 +176,7 @@ def legacy_upload():
 
         session['captcha_verified'] = True
         session.permanent = True
-        
+
     if 'file' not in request.files:
         return {"error": "請上傳檔案"}, 400
 
