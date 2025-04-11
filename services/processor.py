@@ -49,7 +49,7 @@ def process_score_report(df_score, df_history):
     merged["EasyTest秒數"] = merged["EasyTest總時數"].apply(parse_time_to_seconds)
 
     result_df = merged[[
-        '帳號', '名字', '上線時間', 'MyET秒數', '總時數', 'EasyTest秒數'
+        '帳號', '名字', '上線時間', 'MyET秒數', 'EasyTest總時數', 'EasyTest秒數'
     ]]
 
     return result_df
