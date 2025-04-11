@@ -77,8 +77,8 @@ function handleFileUpload(file) {
       window.URL.revokeObjectURL(url);
     })
     .catch((error) => {
-      console.error("Error:", error);
-      alert("文件上傳失敗，請再試一次。");
+      console.error("Upload error:", error);
+      alert("文件上傳失敗，請再試一次。原因是：" + error.message);
     });
 }
 
