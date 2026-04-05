@@ -6,6 +6,14 @@
 使用方式
 
 
+先建立環境變數（可由 `.env.example` 複製）：
+
+- `SECRET_KEY`
+- `TURNSTILE_SECRET_KEY`
+- `TURNSTILE_SITE_KEY`
+- `MAX_CONTENT_LENGTH`（預設 20971520，約 20MB）
+
+
 ```docker-compose.yml
 version: "3.8"
 

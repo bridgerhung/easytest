@@ -1,9 +1,12 @@
 const submitButton = document.querySelector(".button");
-const historyFileInput = document.getElementById("history-file");
-const onlineInfoFileInput = document.getElementById("online-info-file");
+const easytestFileInput = document.getElementById("easytest-file");
+const myetFileInput = document.getElementById("myet-file");
+const studentListFileInput = document.getElementById("student-list-file");
 const form = document.querySelector(".upload-form");
+const turnstileContainer = document.getElementById("cf-turnstile");
+let turnstileWidgetId = null;
 
-const showCaptcha = "{{ show_captcha|lower }}";
+const showCaptcha = form?.dataset?.showCaptcha ?? "true";
 submitButton.disabled = showCaptcha === "true";
 /* Disclaimer Modal Functionality */
 const disclaimerModal = document.getElementById("disclaimerModal");
@@ -56,9 +59,10 @@ window.addEventListener("click", (event) => {
 });
 
 window.onloadTurnstileCallback = function () {
-  if (document.getElementById("cf-turnstile")) {
-    turnstile.render("#cf-turnstile", {
-      sitekey: "0x4AAAAAAA3QtOGlz4UGnf74",
+  if (turnstileContainer && turnstileWidgetId === null && typeof turnstile !== "undefined") {
+    const sitekey = turnstileContainer.dataset.sitekey;
+    turnstileWidgetId = turnstile.render("#cf-turnstile", {
+      sitekey,
       callback: function (token) {
         submitButton.disabled = false;
         window.captchaToken = token;
@@ -73,40 +77,66 @@ form.addEventListener("submit", function (e) {
 });
 
 function handleFormSubmit() {
-  if (!historyFileInput.files[0] || !onlineInfoFileInput.files[0]) {
-    alert("請選擇兩個檔案後再提交！");
+  const easytestFile = easytestFileInput.files[0];
+  const myetFile = myetFileInput.files[0];
+  const studentListFile = studentListFileInput.files[0];
+
+  const hasEasyTest = Boolean(easytestFile);
+  const hasMyET = Boolean(myetFile);
+  const hasStudentList = Boolean(studentListFile);
+
+  if (!hasEasyTest && !hasMyET && !hasStudentList) {
+    alert("請至少上傳 EasyTest 或 MyET 檔案。");
+    return;
+  }
+
+  if (hasStudentList && !hasEasyTest && !hasMyET) {
+    alert("不可只上傳學生名單，請至少再上傳 EasyTest 或 MyET 檔案。");
     return;
   }
 
   const formData = new FormData();
-  formData.append("history_file", historyFileInput.files[0]);
-  formData.append("online_info_file", onlineInfoFileInput.files[0]);
-  if (window.captchaToken) {
-    formData.append("cf-turnstile-response", window.captchaToken);
-    delete window.captchaToken;
+  if (easytestFile) {
+    formData.append("easytest_file", easytestFile);
+  }
+  if (myetFile) {
+    formData.append("myet_file", myetFile);
+  }
+  if (studentListFile) {
+    formData.append("student_list_file", studentListFile);
   }
 
-  fetch("/new/upload", {
+  if (window.captchaToken) {
+    formData.append("cf-turnstile-response", window.captchaToken);
+  }
+
+  fetch("/upload", {
     method: "POST",
     body: formData,
   })
     .then((response) => {
-      if (!response.ok)
-        return response.text().then((text) => {
-          throw new Error(text);
-        });
+      if (!response.ok) {
+        return response
+          .json()
+          .then((payload) => {
+            throw new Error(payload.error || "文件上傳失敗");
+          })
+          .catch(() => {
+            throw new Error("文件上傳失敗");
+          });
+      }
       return response.blob();
     })
     .then((blob) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download =
-        historyFileInput.files[0].name.replace(/\.[^/.]+$/, "") + "-count.xlsx";
+      a.download = "result.xlsx";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      delete window.captchaToken;
     })
     .catch((error) => {
       console.error("Upload error:", error);

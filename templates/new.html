@@ -43,15 +43,15 @@
         </div>
         <div class="upload-section">
           <p>
-            請根據您的需求上傳檔案以進行資料處理：<br />
-            <strong>EasyTest 的 csv 檔案 (history*.csv)</strong> 搭配
-            <strong>MyET 的 xlsx 檔案 (OnlineInfo_*.xlsx 或 ScoreReport_*.xlsx)</strong>，<br />
-            或搭配 <strong>學生名單 (*_Stud_List.xlsx)</strong>。
+            請根據您的需求彈性上傳檔案：<br />
+            <strong>EasyTest 的 csv 檔案 (history*.csv)</strong>、
+            <strong>MyET 的 xlsx 檔案 (OnlineInfo_*.xlsx 或 ScoreReport_*.xlsx)</strong>、
+            <strong>學生名單 (*_Stud_List.xlsx)</strong>。
           </p>
           <p>
-            本系統將為您自動計算秒數與時數，並轉換為 Excel 檔案。<br />
-            若僅使用 EasyTest 的助教，可上傳 <strong>history*.csv</strong> 與
-            <strong>*_Stud_List.xlsx</strong>，系統將根據學生名單計算總時數與成績。
+            規則：至少要上傳 EasyTest 或 MyET 其中一種；
+            <strong>不可只上傳學生名單</strong>。<br />
+            若有學生名單，會以學生名單作為完整名單核對基準。
           </p>
         </div>
         <div class="instructions">
@@ -61,31 +61,41 @@
             否則轉移到其他電腦時可能會發生錯誤。
           </p>
         </div>
-        <form class="upload-form" method="post" enctype="multipart/form-data">
+        <form class="upload-form" method="post" enctype="multipart/form-data" data-show-captcha="{{ 'true' if show_captcha else 'false' }}">
           <div class="file-upload-container">
             <div class="file-upload-block">
-              <label for="history-file" class="file-label">
+              <label for="easytest-file" class="file-label">
                 <i class="fas fa-file-csv"></i>
                 EasyTest 成績檔案 (.csv)
               </label>
-              <input id="history-file" type="file" name="history_file" accept=".csv" required />
+              <input id="easytest-file" type="file" name="easytest_file" accept=".csv" />
               <small class="file-hint">
                 請上傳從 EasyTest 下載的 history*.csv 檔案，包含「使用者帳號」與「總時數」。
               </small>
             </div>
             <div class="file-upload-block">
-              <label for="online-info-file" class="file-label">
+              <label for="myet-file" class="file-label">
                 <i class="fas fa-file-excel"></i>
-                MyET 或學生名單檔案 (.xlsx)
+                MyET 檔案 (.xlsx)
               </label>
-              <input id="online-info-file" type="file" name="online_info_file" accept=".xlsx" required />
+              <input id="myet-file" type="file" name="myet_file" accept=".xlsx" />
               <small class="file-hint">
-                請上傳 MyET 的 OnlineInfo_*.xlsx / ScoreReport_*.xlsx，或學生名單 *_Stud_List.xlsx。
+                請上傳 MyET 的 OnlineInfo_*.xlsx 或 ScoreReport_*.xlsx。
+              </small>
+            </div>
+            <div class="file-upload-block">
+              <label for="student-list-file" class="file-label">
+                <i class="fas fa-user-graduate"></i>
+                學生名單檔案 (.xlsx)
+              </label>
+              <input id="student-list-file" type="file" name="student_list_file" accept=".xlsx" />
+              <small class="file-hint">
+                若上傳學生名單，會以名單作為完整學生主表（不可單獨上傳）。
               </small>
             </div>
           </div>
           {% if show_captcha %}
-          <div id="cf-turnstile" class="cf-turnstile"></div>
+          <div id="cf-turnstile" data-sitekey="{{ turnstile_site_key }}"></div>
           {% else %}
           <p>您已驗證完成，可直接上傳檔案無需再次解決 CAPTCHA。</p>
           {% endif %}
@@ -94,7 +104,7 @@
           </div>
         </form>
       </div>
-      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" defer></script>
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onloadTurnstileCallback" defer></script>
       <footer class="footer">
         <div class="footer-content">
           <p class="copyright">© <span id="year"></span> Bridger Hung</p>

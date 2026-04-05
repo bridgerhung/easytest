@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+uploads/*
+results/*
+tests/*
+!uploads/.gitkeep
+!results/.gitkeep
+CODEX.md
+refactor.md

@@ -1,19 +1,38 @@
-from flask import Flask, request, send_file, session, render_template, after_this_request, jsonify
+from flask import Flask, request, send_file, session, render_template, after_this_request
 import os
 import time
+import csv
+import zipfile
+import uuid
+import hashlib
+import logging
 import pandas as pd
 import requests
-from threading import Thread
+from threading import Thread, Timer
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import RequestEntityTooLarge
 
-from config import UPLOAD_FOLDER, RESULT_FOLDER, SECRET_KEY, SESSION_LIFETIME, TURNSTILE_SECRET_KEY
+from config import (
+    UPLOAD_FOLDER,
+    RESULT_FOLDER,
+    SECRET_KEY,
+    SESSION_LIFETIME,
+    TURNSTILE_SECRET_KEY,
+    TURNSTILE_SITE_KEY,
+    MAX_CONTENT_LENGTH,
+    DEBUG,
+    CAPTCHA_VERIFIED_TTL,
+)
 from utils.file_ops import delete_old_files
-from services.processor import process_online_info, process_score_report, process_easytest
-from utils.time_parser import parse_time_to_seconds, parse_myet_time_to_seconds, seconds_to_hour_minute 
+from services.processor import process_combined
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.config['PERMANENT_SESSION_LIFETIME'] = SESSION_LIFETIME
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -25,219 +44,327 @@ def cleanup_task():
         delete_old_files(RESULT_FOLDER, 60)
         time.sleep(60)
 
-@app.route('/')
-def home():
-    return render_template("home.html")
 
-@app.route('/new')
-def new():
-    show_captcha = 'captcha_verified' not in session or not session['captcha_verified']
-    return render_template('new.html', show_captcha=show_captcha)
+def _schedule_delete(path, delay_seconds=120):
+    def _delete():
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except OSError as exc:
+            logger.warning("Failed to delete file %s: %s", path, exc)
 
-@app.route('/legacy')
-def legacy():
-    show_captcha = 'captcha_verified' not in session or not session['captcha_verified']
-    return render_template('legacy.html', show_captcha=show_captcha)
+    Timer(delay_seconds, _delete).start()
 
-@app.route('/new/upload', methods=['POST'])
-def upload_file():
-    
-    if 'captcha_verified' in session and session['captcha_verified']:
-        pass  # 跳過 CAPTCHA 驗證
-    else:
-        captcha_token = request.form.get('cf-turnstile-response')
-        if not captcha_token:
-            return {"error": "CAPTCHA token is missing"}, 400
 
-        verification_url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
-        payload = {
-            "secret": TURNSTILE_SECRET_KEY,
-            "response": captcha_token,
-            "remoteip": request.remote_addr
-        }
-        response = requests.post(verification_url, data=payload)
-        result = response.json()
+def _build_unique_filename(original_filename, prefix):
+    _, ext = os.path.splitext(secure_filename(original_filename))
+    unique_id = uuid.uuid4().hex
+    return f"{prefix}_{unique_id}{ext.lower()}"
 
-        if not result.get("success"):
-            return {"error": "CAPTCHA validation failed"}, 403
 
-        session['captcha_verified'] = True
-        session.permanent = True
-    
-    if 'history_file' not in request.files or 'online_info_file' not in request.files:
-        return "請上傳 history*.csv 和 OnlineInfo_*.xlsx 檔案", 400
+def _build_client_fingerprint():
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    client_ip = forwarded_for.split(",", 1)[0].strip() if forwarded_for else (request.remote_addr or "")
+    user_agent = request.headers.get("User-Agent", "")
+    raw = f"{client_ip}|{user_agent}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
-    history_file = request.files['history_file']
-    online_info_file = request.files['online_info_file']
 
-    if history_file.filename == '' or online_info_file.filename == '':
-        return "沒有檔案被選取", 400
+def _is_captcha_verified_for_request():
+    verified_data = session.get("captcha_verified")
+    if not isinstance(verified_data, dict):
+        return False
 
-    if not history_file.filename.lower().endswith('.csv'):
-        return "History 檔案必須是 .csv 格式", 400
-
-    if not online_info_file.filename.lower().endswith('.xlsx'):
-        return "OnlineInfo 檔案必須是 .xlsx 格式", 400
+    verified_at = verified_data.get("verified_at")
+    fingerprint = verified_data.get("fingerprint")
+    if verified_at is None or not fingerprint:
+        return False
 
     try:
-        history_path = os.path.join(UPLOAD_FOLDER, secure_filename(history_file.filename))
-        online_info_path = os.path.join(UPLOAD_FOLDER, secure_filename(online_info_file.filename))
-        history_file.save(history_path)
-        online_info_file.save(online_info_path)
+        verified_at = float(verified_at)
+    except (TypeError, ValueError):
+        return False
 
-        # 讀取 history.csv
+    if time.time() - verified_at > CAPTCHA_VERIFIED_TTL:
+        return False
+
+    return fingerprint == _build_client_fingerprint()
+
+
+def _read_csv_with_fallback(path):
+    for encoding in ("utf-8", "big5", "ISO-8859-1"):
         try:
-            history_df = pd.read_csv(history_path, encoding='utf-8')
+            return pd.read_csv(path, encoding=encoding)
         except UnicodeDecodeError:
-            try:
-                history_df = pd.read_csv(history_path, encoding='big5')
-            except UnicodeDecodeError:
-                history_df = pd.read_csv(history_path, encoding='ISO-8859-1')
+            continue
+    raise ValueError("CSV 編碼無法辨識，請確認檔案內容是否為有效 CSV。")
 
-        history_df = history_df.astype(str)
 
-        # 處理不同的上傳類型
-        filename = online_info_file.filename
+def _read_excel_with_required_columns(path, *, skiprows, required_columns, sheet_name=0):
+    df = pd.read_excel(path, sheet_name=sheet_name, skiprows=skiprows)
+    raw_columns = [str(col).strip() for col in df.columns]
+    normalized_map = {"".join(col.split()): col for col in raw_columns}
 
-        if filename.endswith("Stud_List.xlsx"):
-            stud_df = pd.read_excel(
-                online_info_path,
-                sheet_name=0,
-                skiprows=4,
-                usecols=[0, 1, 2, 3],
-                names=["班級", "學號", "姓名", "修別"]
-            )
-            result_df = process_easytest(stud_df, history_df)
-            result_filename = "result_stud_list.xlsx"
+    selected_columns = []
+    for required in required_columns:
+        normalized_required = "".join(required.split())
+        matched = normalized_map.get(normalized_required)
+        if matched:
+            selected_columns.append(matched)
 
-        elif filename.startswith("ScoreReport"):
-            score_df = pd.read_excel(
-                online_info_path,
-                sheet_name=0,
-                skiprows=1,
-                usecols=["帳號", "名字", "上線時間", "平均分數", "次"]
-            )
-            result_df = process_score_report(score_df, history_df)
-            result_filename = "result_score_report.xlsx"
+    missing = [
+        required
+        for required in required_columns
+        if "".join(required.split()) not in normalized_map
+    ]
+    if missing:
+        raise ValueError(f"欄位缺少: {', '.join(missing)}")
 
-        elif filename.startswith("OnlineInfo"):
-            online_df = pd.read_excel(
-                online_info_path,
-                sheet_name=0,
-                skiprows=1,
-                usecols=["帳號", "姓名", "總上線時間", "登入學習次數"]
-            )
-            result_df = process_online_info(online_df, history_df)
-            result_df.rename(columns={"總時數": "EasyTest總時數"}, inplace=True)
-            result_filename = "result_online_info.xlsx"
-    
-        else:
-            return "不支援的檔案格式", 400
+    output = df[selected_columns].copy()
+    output.columns = required_columns
+    return output
 
-        result_path = os.path.join(RESULT_FOLDER, result_filename)
+
+def _validate_csv_content(path):
+    for encoding in ("utf-8", "big5", "ISO-8859-1"):
+        try:
+            with open(path, "r", encoding=encoding, errors="strict") as f:
+                sample = f.read(8192)
+        except UnicodeDecodeError:
+            continue
+
+        if not sample.strip():
+            raise ValueError("CSV 檔案是空的，請重新匯出後再上傳。")
+
+        try:
+            csv.Sniffer().sniff(sample)
+            return
+        except csv.Error:
+            # Fallback heuristic for common delimited text.
+            if any(delimiter in sample for delimiter in [",", "\t", ";"]) and "\n" in sample:
+                return
+
+    raise ValueError("檔案內容不是有效的 CSV 格式，請確認檔案沒有損毀。")
+
+
+def _validate_xlsx_content(path):
+    if not zipfile.is_zipfile(path):
+        raise ValueError("檔案內容不是有效的 XLSX 格式，請確認檔案沒有損毀。")
+
+    with zipfile.ZipFile(path, "r") as zf:
+        names = set(zf.namelist())
+        if "[Content_Types].xml" not in names or not any(name.startswith("xl/") for name in names):
+            raise ValueError("檔案內容不是有效的 XLSX 格式，請重新匯出後再上傳。")
+
+
+def _validate_uploaded_content(path, expected_type):
+    if expected_type == "csv":
+        _validate_csv_content(path)
+        return
+    if expected_type == "xlsx":
+        _validate_xlsx_content(path)
+        return
+    raise ValueError(f"不支援的檔案驗證類型: {expected_type}")
+
+
+def _verify_captcha_if_needed():
+    if _is_captcha_verified_for_request():
+        return None
+
+    captcha_token = request.form.get('cf-turnstile-response')
+    if not captcha_token:
+        return {"error": "CAPTCHA token is missing"}, 400
+
+    if not TURNSTILE_SECRET_KEY:
+        logger.error("TURNSTILE_SECRET_KEY is not configured.")
+        return {"error": "CAPTCHA service is not configured"}, 500
+
+    verification_url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    payload = {
+        "secret": TURNSTILE_SECRET_KEY,
+        "response": captcha_token,
+        "remoteip": request.remote_addr
+    }
+
+    try:
+        response = requests.post(verification_url, data=payload, timeout=10)
+        result = response.json()
+    except requests.RequestException as exc:
+        logger.warning("CAPTCHA verification request failed: %s", exc)
+        return {"error": "CAPTCHA validation failed"}, 502
+
+    if not result.get("success"):
+        return {"error": "CAPTCHA validation failed"}, 403
+
+    session['captcha_verified'] = {
+        "verified_at": time.time(),
+        "fingerprint": _build_client_fingerprint(),
+    }
+    session.permanent = True
+    return None
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_large_upload(_error):
+    max_mb = app.config['MAX_CONTENT_LENGTH'] // (1024 * 1024)
+    return {"error": f"檔案過大，請上傳小於 {max_mb}MB 的檔案"}, 413
+
+@app.route('/')
+def home():
+    show_captcha = not _is_captcha_verified_for_request()
+    return render_template('new.html', show_captcha=show_captcha, turnstile_site_key=TURNSTILE_SITE_KEY)
+
+
+def _read_easytest_df(path):
+    history_df = _read_csv_with_fallback(path)
+    history_df = history_df.astype(str)
+    required_history_cols = ["使用者帳號", "總時數"]
+    missing_history_cols = [col for col in required_history_cols if col not in history_df.columns]
+    if missing_history_cols:
+        raise ValueError(f"EasyTest 檔案欄位缺少: {', '.join(missing_history_cols)}")
+    return history_df
+
+
+def _read_myet_df(path, filename):
+    if filename.startswith("OnlineInfo"):
+        return _read_excel_with_required_columns(
+            path,
+            sheet_name=0,
+            skiprows=1,
+            required_columns=["帳號", "姓名", "總上線時間"],
+        )
+
+    if filename.startswith("ScoreReport"):
+        return _read_excel_with_required_columns(
+            path,
+            sheet_name=0,
+            skiprows=1,
+            required_columns=["帳號", "名字", "上線時間"],
+        )
+
+    try:
+        return _read_excel_with_required_columns(
+            path,
+            sheet_name=0,
+            skiprows=1,
+            required_columns=["帳號", "姓名", "總上線時間"],
+        )
+    except ValueError:
+        return _read_excel_with_required_columns(
+            path,
+            sheet_name=0,
+            skiprows=1,
+            required_columns=["帳號", "名字", "上線時間"],
+        )
+
+
+def _read_student_df(path):
+    try:
+        stud_df = pd.read_excel(
+            path,
+            sheet_name=0,
+            skiprows=4,
+            usecols=[0, 1, 2, 3],
+            names=["班級", "學號", "姓名", "修別"],
+        )
+        return stud_df[["學號", "姓名"]]
+    except Exception:
+        fallback_df = pd.read_excel(path, sheet_name=0)
+        fallback_df.columns = [str(col).strip() for col in fallback_df.columns]
+        required_cols = ["學號", "姓名"]
+        missing = [col for col in required_cols if col not in fallback_df.columns]
+        if missing:
+            raise ValueError(f"學生資料表欄位缺少: {', '.join(missing)}")
+        return fallback_df[["學號", "姓名"]]
+
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    captcha_check = _verify_captcha_if_needed()
+    if captcha_check:
+        return captcha_check
+
+    easytest_file = request.files.get('easytest_file')
+    myet_file = request.files.get('myet_file')
+    student_list_file = request.files.get('student_list_file')
+
+    has_easytest = bool(easytest_file and easytest_file.filename)
+    has_myet = bool(myet_file and myet_file.filename)
+    has_student = bool(student_list_file and student_list_file.filename)
+
+    if not (has_easytest or has_myet or has_student):
+        return {"error": "請至少上傳 EasyTest 或 MyET 檔案"}, 400
+
+    if has_student and not (has_easytest or has_myet):
+        return {"error": "不可以只上傳學生資料表，請至少再上傳 EasyTest 或 MyET 檔案"}, 400
+
+    if has_easytest and not easytest_file.filename.lower().endswith('.csv'):
+        return {"error": "EasyTest 檔案必須是 .csv 格式"}, 400
+
+    if has_myet and not myet_file.filename.lower().endswith('.xlsx'):
+        return {"error": "MyET 檔案必須是 .xlsx 格式"}, 400
+
+    if has_student and not student_list_file.filename.lower().endswith('.xlsx'):
+        return {"error": "學生資料表檔案必須是 .xlsx 格式"}, 400
+
+    easytest_path = None
+    myet_path = None
+    student_list_path = None
+    result_path = None
+
+    try:
+        easytest_df = None
+        myet_df = None
+        student_df = None
+
+        if has_easytest:
+            easytest_path = os.path.join(UPLOAD_FOLDER, _build_unique_filename(easytest_file.filename, "easytest"))
+            easytest_file.save(easytest_path)
+            _validate_uploaded_content(easytest_path, "csv")
+            easytest_df = _read_easytest_df(easytest_path)
+
+        if has_myet:
+            myet_path = os.path.join(UPLOAD_FOLDER, _build_unique_filename(myet_file.filename, "myet"))
+            myet_file.save(myet_path)
+            _validate_uploaded_content(myet_path, "xlsx")
+            myet_df = _read_myet_df(myet_path, myet_file.filename)
+
+        if has_student:
+            student_list_path = os.path.join(UPLOAD_FOLDER, _build_unique_filename(student_list_file.filename, "student_list"))
+            student_list_file.save(student_list_path)
+            _validate_uploaded_content(student_list_path, "xlsx")
+            student_df = _read_student_df(student_list_path)
+
+        result_df = process_combined(easytest_df, myet_df, student_df)
+
+        download_filename = "result.xlsx"
+        result_storage_name = _build_unique_filename(download_filename, "result")
+        result_path = os.path.join(RESULT_FOLDER, result_storage_name)
         result_df.to_excel(result_path, index=False)
 
         @after_this_request
         def cleanup(response):
-            try:
-                os.remove(history_path)
-                os.remove(online_info_path)
-                os.remove(result_path)
-            except Exception as e:
-                print(f"清理時發生錯誤: {e}")
+            for path in (easytest_path, myet_path, student_list_path, result_path):
+                if path:
+                    _schedule_delete(path)
             return response
 
-        return send_file(result_path, as_attachment=True)
+        return send_file(result_path, as_attachment=True, download_name=download_filename)
 
+    except ValueError as e:
+        for path in (easytest_path, myet_path, student_list_path, result_path):
+            if path and os.path.exists(path):
+                _schedule_delete(path, delay_seconds=1)
+        logger.info("Upload validation failed: %s", e)
+        return {"error": str(e)}, 400
     except Exception as e:
-        return f"處理檔案時發生錯誤: {str(e)}", 500
-
-
-@app.route('/legacy/upload', methods=['POST'])
-def legacy_upload():
-    if 'captcha_verified' in session and session['captcha_verified']:
-        pass  # 跳過 CAPTCHA 驗證
-    else:
-        captcha_token = request.form.get('cf-turnstile-response')
-        if not captcha_token:
-            return {"error": "CAPTCHA token is missing"}, 400
-
-        verification_url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
-        payload = {
-            "secret": TURNSTILE_SECRET_KEY,
-            "response": captcha_token,
-            "remoteip": request.remote_addr
-        }
-        response = requests.post(verification_url, data=payload)
-        result = response.json()
-
-        if not result.get("success"):
-            return {"error": "CAPTCHA validation failed"}, 403
-
-        session['captcha_verified'] = True
-        session.permanent = True
-
-    if 'file' not in request.files:
-        return {"error": "請上傳檔案"}, 400
-
-    file = request.files['file']
-    if file.filename == '':
-        return {"error": "未選擇檔案"}, 400
-
-    filename = secure_filename(file.filename)
-
-    if not (filename.lower().endswith('.xlsx') or filename.lower().endswith('.csv')):
-        return {"error": "檔案格式不支援，請上傳 .xlsx 或 .csv 檔案"}, 400
-
-    input_path = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(input_path)
-
-    name, ext = os.path.splitext(filename)
-    output_filename = f"{name}-count.xlsx"
-    output_path = os.path.join(RESULT_FOLDER, output_filename)
-
-    try:
-        if filename.startswith('OnlineInfo') and ext == '.xlsx':
-            df = pd.read_excel(input_path, skiprows=1, usecols=["帳號", "姓名", "總上線時間", "登入學習次數"])
-            df["MyET秒數"] = df["總上線時間"].apply(parse_myet_time_to_seconds)
-            df["MyET時分"] = df["MyET秒數"].apply(seconds_to_hour_minute)
-            df.to_excel(output_path, index=False)
-
-        elif filename.startswith('ScoreReport') and ext == '.xlsx':
-            df = pd.read_excel(input_path, skiprows=1, usecols=["帳號", "名字", "上線時間"])
-            df["MyET秒數"] = df["上線時間"].apply(parse_myet_time_to_seconds)
-            df.to_excel(output_path, index=False)
-
-        else:
-            try:
-                df = pd.read_csv(input_path, encoding='utf-8')
-            except UnicodeDecodeError:
-                try:
-                    df = pd.read_csv(input_path, encoding='big5')
-                except UnicodeDecodeError:
-                    df = pd.read_csv(input_path, encoding='ISO-8859-1')
-
-            df["總時數"] = df["總時數"].astype(str)
-            df["秒數"] = df["總時數"].apply(parse_time_to_seconds)
-            df.to_excel(output_path, index=False)
-
-        @after_this_request
-        def remove_files(response):
-            try:
-                os.remove(input_path)
-                os.remove(output_path)
-            except Exception as e:
-                print(f"Error deleting files: {e}")
-            return response
-
-        return send_file(output_path, as_attachment=True)
-
-    except Exception as e:
-        if os.path.exists(input_path):
-            os.remove(input_path)
-        return {"error": str(e)}, 500
+        for path in (easytest_path, myet_path, student_list_path, result_path):
+            if path and os.path.exists(path):
+                _schedule_delete(path, delay_seconds=1)
+        logger.exception("Upload processing failed")
+        return {"error": f"處理檔案時發生錯誤: {str(e)}"}, 500
 
 if __name__ == '__main__':
     cleanup_thread = Thread(target=cleanup_task, daemon=True)
     cleanup_thread.start()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=DEBUG)

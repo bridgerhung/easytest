@@ -7,7 +7,7 @@ def parse_time_to_seconds(time_str):
             h = int(time_str.split("時")[0])
             m = int(time_str.split("時")[1].split("分")[0])
         return h * 3600 + m * 60
-    except:
+    except (ValueError, TypeError, IndexError):
         return 0
 
 def parse_myet_time_to_seconds(time_str):
@@ -25,7 +25,7 @@ def parse_myet_time_to_seconds(time_str):
             if "秒" in parts:
                 s = int(parts.split("秒")[0].split()[-1])
         return d * 86400 + h * 3600 + m * 60 + s
-    except:
+    except (ValueError, TypeError, IndexError):
         return 0
 
 
