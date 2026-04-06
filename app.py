@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, session, render_template, after_this_request
+from flask import Flask, request, send_file, session, render_template, after_this_request, redirect, url_for
 import os
 import time
 import csv
@@ -241,6 +241,14 @@ def handle_large_upload(_error):
 def home():
     show_captcha = not _is_captcha_verified_for_request()
     return render_template('new.html', show_captcha=show_captcha, turnstile_site_key=TURNSTILE_SITE_KEY)
+
+
+@app.route('/new')
+@app.route('/new/')
+@app.route('/legacy')
+@app.route('/legacy/')
+def redirect_to_home():
+    return redirect(url_for('home'))
 
 
 def _read_easytest_df(path):
