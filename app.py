@@ -92,12 +92,40 @@ def _is_captcha_verified_for_request():
 
 
 def _read_csv_with_fallback(path):
-    for encoding in ("utf-8", "big5", "ISO-8859-1"):
+    decode_strategies = [
+        ("utf-8-sig", "strict"),
+        ("utf-8", "strict"),
+        ("cp950", "strict"),
+        ("big5", "strict"),
+        ("cp950", "replace"),
+        ("big5", "replace"),
+        ("utf-16", "strict"),
+        ("ISO-8859-1", "strict"),
+    ]
+
+    for encoding, encoding_errors in decode_strategies:
         try:
-            return pd.read_csv(path, encoding=encoding)
+            return pd.read_csv(
+                path,
+                encoding=encoding,
+                encoding_errors=encoding_errors,
+                sep=None,
+                engine="python",
+            )
+        except TypeError:
+            # Older pandas may not support `encoding_errors`; keep behavior compatible.
+            try:
+                return pd.read_csv(path, encoding=encoding, sep=None, engine="python")
+            except UnicodeDecodeError:
+                continue
         except UnicodeDecodeError:
             continue
     raise ValueError("CSV 編碼無法辨識，請確認檔案內容是否為有效 CSV。")
+
+
+def _normalize_column_name(name):
+    # Normalize BOM/whitespace variants so uploaded files from different tools can still match expected headers.
+    return "".join(str(name).replace("\ufeff", "").replace("\u200b", "").strip().split())
 
 
 def _read_excel_with_required_columns(path, *, skiprows, required_columns, sheet_name=0):
@@ -219,10 +247,31 @@ def _read_easytest_df(path):
     history_df = _read_csv_with_fallback(path)
     history_df = history_df.astype(str)
     required_history_cols = ["使用者帳號", "總時數"]
-    missing_history_cols = [col for col in required_history_cols if col not in history_df.columns]
+    normalized_map = {
+        _normalize_column_name(col): col
+        for col in history_df.columns
+    }
+
+    selected_columns = []
+    missing_history_cols = []
+    for required in required_history_cols:
+        matched = normalized_map.get(_normalize_column_name(required))
+        if matched:
+            selected_columns.append(matched)
+        else:
+            missing_history_cols.append(required)
+
     if missing_history_cols:
-        raise ValueError(f"EasyTest 檔案欄位缺少: {', '.join(missing_history_cols)}")
-    return history_df
+        existing = ", ".join(str(col) for col in history_df.columns)
+        raise ValueError(
+            f"EasyTest 檔案欄位缺少: {', '.join(missing_history_cols)}。"
+            f"目前讀到欄位: {existing}。"
+            "請確認 CSV 第一列標題包含「使用者帳號」與「總時數」。"
+        )
+
+    output = history_df[selected_columns].copy()
+    output.columns = required_history_cols
+    return output
 
 
 def _read_myet_df(path, filename):

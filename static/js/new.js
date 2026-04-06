@@ -116,14 +116,21 @@ function handleFormSubmit() {
   })
     .then((response) => {
       if (!response.ok) {
-        return response
-          .json()
-          .then((payload) => {
-            throw new Error(payload.error || "文件上傳失敗");
-          })
-          .catch(() => {
-            throw new Error("文件上傳失敗");
-          });
+        return response.text().then((text) => {
+          let serverMessage = "文件上傳失敗";
+          if (text) {
+            try {
+              const payload = JSON.parse(text);
+              serverMessage = payload.error || serverMessage;
+            } catch (_e) {
+              serverMessage = text;
+            }
+          }
+
+          const error = new Error(serverMessage);
+          error.status = response.status;
+          throw error;
+        });
       }
       return response.blob();
     })
@@ -140,8 +147,34 @@ function handleFormSubmit() {
     })
     .catch((error) => {
       console.error("Upload error:", error);
-      alert("文件上傳失敗，請再試一次。原因是：" + error.message);
+      alert(buildUploadErrorMessage(error));
     });
+}
+
+function buildUploadErrorMessage(error) {
+  const rawMessage = String(error?.message || "").trim();
+  const status = error?.status;
+
+  if (rawMessage.includes("EasyTest 檔案欄位缺少")) {
+    return [
+      "EasyTest 檔案格式不符合需求。",
+      `伺服器訊息：${rawMessage}`,
+      "請確認：",
+      "1. 檔案為 EasyTest 匯出的 history*.csv",
+      "2. 第一列標題包含「使用者帳號」與「總時數」",
+      "3. 沒有手動刪除或改名欄位",
+    ].join("\n");
+  }
+
+  if (status === 413) {
+    return `檔案太大，無法上傳。\n伺服器訊息：${rawMessage || "請縮小檔案後再試"}`;
+  }
+
+  if (rawMessage) {
+    return `文件上傳失敗。\n伺服器訊息：${rawMessage}`;
+  }
+
+  return "文件上傳失敗，請再試一次。";
 }
 
 document.getElementById("year").textContent = new Date().getFullYear();

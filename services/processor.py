@@ -7,9 +7,9 @@ from utils.time_parser import parse_time_to_seconds, parse_myet_time_to_seconds
 OUTPUT_COLUMNS = [
     "學號",
     "姓名",
-    "EasyTest 原始資料(Optional)",
+    "EasyTest 原始資料",
     "EasyTest 秒數",
-    "MyET原始資料(Optional)",
+    "MyET原始資料",
     "MyET秒數",
 ]
 
@@ -20,10 +20,10 @@ def _normalize_easytest(df_easytest):
     normalized["學號"] = normalized["使用者帳號"].astype(str).str.strip()
     normalized = normalized[normalized["學號"] != ""]
 
-    normalized["EasyTest 原始資料(Optional)"] = (
+    normalized["EasyTest 原始資料"] = (
         normalized["總時數"].fillna("").astype(str).str.strip()
     )
-    normalized["EasyTest 秒數"] = normalized["EasyTest 原始資料(Optional)"].apply(
+    normalized["EasyTest 秒數"] = normalized["EasyTest 原始資料"].apply(
         parse_time_to_seconds
     )
 
@@ -33,7 +33,7 @@ def _normalize_easytest(df_easytest):
         normalized["姓名"] = ""
 
     return normalized[
-        ["學號", "姓名", "EasyTest 原始資料(Optional)", "EasyTest 秒數"]
+        ["學號", "姓名", "EasyTest 原始資料", "EasyTest 秒數"]
     ].drop_duplicates(subset=["學號"], keep="first")
 
 
@@ -52,14 +52,14 @@ def _normalize_myet(df_myet):
         normalized["姓名"] = ""
 
     myet_raw_col = "總上線時間" if "總上線時間" in normalized.columns else "上線時間"
-    normalized["MyET原始資料(Optional)"] = (
+    normalized["MyET原始資料"] = (
         normalized[myet_raw_col].fillna("").astype(str).str.strip()
     )
-    normalized["MyET秒數"] = normalized["MyET原始資料(Optional)"].apply(
+    normalized["MyET秒數"] = normalized["MyET原始資料"].apply(
         parse_myet_time_to_seconds
     )
 
-    return normalized[["學號", "姓名", "MyET原始資料(Optional)", "MyET秒數"]].drop_duplicates(
+    return normalized[["學號", "姓名", "MyET原始資料", "MyET秒數"]].drop_duplicates(
         subset=["學號"], keep="first"
     )
 
@@ -102,7 +102,7 @@ def process_combined(df_easytest=None, df_myet=None, df_students=None):
             result["姓名"] = myet_name.where(myet_name.notna(), result["姓名"])
         result = result.drop(columns=["姓名_myet"], errors="ignore")
     else:
-        result["MyET原始資料(Optional)"] = ""
+        result["MyET原始資料"] = ""
         result["MyET秒數"] = 0
 
     if easytest is not None:
@@ -112,7 +112,7 @@ def process_combined(df_easytest=None, df_myet=None, df_students=None):
             result["姓名"] = easy_name.where(easy_name.notna(), result["姓名"])
         result = result.drop(columns=["姓名_easy"], errors="ignore")
     else:
-        result["EasyTest 原始資料(Optional)"] = ""
+        result["EasyTest 原始資料"] = ""
         result["EasyTest 秒數"] = 0
 
     for column in OUTPUT_COLUMNS:
@@ -120,10 +120,10 @@ def process_combined(df_easytest=None, df_myet=None, df_students=None):
             result[column] = "" if "原始資料" in column or column == "姓名" else 0
 
     result["姓名"] = result["姓名"].fillna("").astype(str)
-    result["EasyTest 原始資料(Optional)"] = (
-        result["EasyTest 原始資料(Optional)"].fillna("").astype(str)
+    result["EasyTest 原始資料"] = (
+        result["EasyTest 原始資料"].fillna("").astype(str)
     )
-    result["MyET原始資料(Optional)"] = result["MyET原始資料(Optional)"].fillna("").astype(str)
+    result["MyET原始資料"] = result["MyET原始資料"].fillna("").astype(str)
     result["EasyTest 秒數"] = (
         pd.to_numeric(result["EasyTest 秒數"], errors="coerce").fillna(0).astype(int)
     )
