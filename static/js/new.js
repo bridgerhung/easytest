@@ -95,16 +95,7 @@ function handleFormSubmit() {
     return;
   }
 
-  const formData = new FormData();
-  if (easytestFile) {
-    formData.append("easytest_file", easytestFile);
-  }
-  if (myetFile) {
-    formData.append("myet_file", myetFile);
-  }
-  if (studentListFile) {
-    formData.append("student_list_file", studentListFile);
-  }
+  const formData = new FormData(form);
 
   if (window.captchaToken) {
     formData.append("cf-turnstile-response", window.captchaToken);

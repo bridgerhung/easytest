@@ -5,12 +5,15 @@ import csv
 import zipfile
 import uuid
 import hashlib
+import hmac
+import secrets
 import logging
 import pandas as pd
 import requests
-from threading import Thread, Timer
+from threading import Thread, Timer, Lock
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import (
     UPLOAD_FOLDER,
@@ -27,12 +30,23 @@ from utils.file_ops import delete_old_files
 from services.processor import process_combined
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.secret_key = SECRET_KEY
 app.config['PERMANENT_SESSION_LIFETIME'] = SESSION_LIFETIME
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+app.config['SESSION_COOKIE_SECURE'] = not DEBUG
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+RATE_LIMIT_MAX_REQUESTS = int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "30"))
+MAX_XLSX_EXPANDED_BYTES = int(os.getenv("MAX_XLSX_EXPANDED_BYTES", str(100 * 1024 * 1024)))
+MAX_XLSX_MEMBER_COUNT = int(os.getenv("MAX_XLSX_MEMBER_COUNT", "2000"))
+_rate_limit_lock = Lock()
+_rate_limit_buckets = {}
 
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -68,6 +82,45 @@ def _build_client_fingerprint():
     user_agent = request.headers.get("User-Agent", "")
     raw = f"{client_ip}|{user_agent}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _ensure_csrf_token():
+    token = session.get("csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session["csrf_token"] = token
+    return token
+
+
+def _verify_csrf_token():
+    if app.config.get("TESTING"):
+        return True
+
+    session_token = session.get("csrf_token")
+    request_token = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
+    if not session_token or not request_token:
+        return False
+    return hmac.compare_digest(str(session_token), str(request_token))
+
+
+def _is_rate_limited():
+    if app.config.get("TESTING"):
+        return False
+
+    now = time.time()
+    key = _build_client_fingerprint()
+
+    with _rate_limit_lock:
+        bucket = _rate_limit_buckets.get(key, [])
+        bucket = [ts for ts in bucket if now - ts < RATE_LIMIT_WINDOW_SECONDS]
+
+        if len(bucket) >= RATE_LIMIT_MAX_REQUESTS:
+            _rate_limit_buckets[key] = bucket
+            return True
+
+        bucket.append(now)
+        _rate_limit_buckets[key] = bucket
+        return False
 
 
 def _is_captcha_verified_for_request():
@@ -154,6 +207,16 @@ def _read_excel_with_required_columns(path, *, skiprows, required_columns, sheet
 
 
 def _validate_csv_content(path):
+    # Reject known non-CSV signatures early (for example renamed ZIP/XLSX files).
+    if zipfile.is_zipfile(path):
+        raise ValueError("檔案內容不是有效的 CSV 格式，請確認檔案沒有損毀。")
+
+    with open(path, "rb") as fb:
+        head = fb.read(8192)
+
+    if b"\x00" in head:
+        raise ValueError("檔案內容不是有效的 CSV 格式，請確認檔案沒有損毀。")
+
     for encoding in ("utf-8", "big5", "ISO-8859-1"):
         try:
             with open(path, "r", encoding=encoding, errors="strict") as f:
@@ -180,6 +243,20 @@ def _validate_xlsx_content(path):
         raise ValueError("檔案內容不是有效的 XLSX 格式，請確認檔案沒有損毀。")
 
     with zipfile.ZipFile(path, "r") as zf:
+        infos = zf.infolist()
+        if len(infos) > MAX_XLSX_MEMBER_COUNT:
+            raise ValueError("XLSX 檔案結構異常，請確認檔案沒有損毀。")
+
+        total_uncompressed = 0
+        for info in infos:
+            # XLSX entries should always be relative paths inside the archive.
+            if info.filename.startswith("/") or ".." in info.filename.split("/"):
+                raise ValueError("XLSX 檔案結構異常，請重新匯出後再上傳。")
+
+            total_uncompressed += int(info.file_size)
+            if total_uncompressed > MAX_XLSX_EXPANDED_BYTES:
+                raise ValueError("XLSX 檔案內容過大，請拆分後再上傳。")
+
         names = set(zf.namelist())
         if "[Content_Types].xml" not in names or not any(name.startswith("xl/") for name in names):
             raise ValueError("檔案內容不是有效的 XLSX 格式，請重新匯出後再上傳。")
@@ -215,7 +292,7 @@ def _verify_captcha_if_needed():
     }
 
     try:
-        response = requests.post(verification_url, data=payload, timeout=10)
+        response = requests.post(verification_url, data=payload, timeout=3)
         result = response.json()
     except requests.RequestException as exc:
         logger.warning("CAPTCHA verification request failed: %s", exc)
@@ -237,10 +314,39 @@ def handle_large_upload(_error):
     max_mb = app.config['MAX_CONTENT_LENGTH'] // (1024 * 1024)
     return {"error": f"檔案過大，請上傳小於 {max_mb}MB 的檔案"}, 413
 
+
+@app.after_request
+def add_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com; "
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+        "img-src 'self' data:; "
+        "font-src 'self' https://cdnjs.cloudflare.com; "
+        "frame-src https://challenges.cloudflare.com;"
+    )
+    if not DEBUG:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
 @app.route('/')
 def home():
+    csrf_token = _ensure_csrf_token()
     show_captcha = not _is_captcha_verified_for_request()
-    return render_template('new.html', show_captcha=show_captcha, turnstile_site_key=TURNSTILE_SITE_KEY)
+    return render_template(
+        'new.html',
+        show_captcha=show_captcha,
+        turnstile_site_key=TURNSTILE_SITE_KEY,
+        csrf_token=csrf_token,
+    )
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    return {"status": "ok"}, 200
 
 
 @app.route('/new')
@@ -337,6 +443,12 @@ def _read_student_df(path):
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    if _is_rate_limited():
+        return {"error": "請求過於頻繁，請稍後再試"}, 429
+
+    if not _verify_csrf_token():
+        return {"error": "CSRF 驗證失敗，請重新整理頁面後再試"}, 403
+
     captcha_check = _verify_captcha_if_needed()
     if captcha_check:
         return captcha_check
@@ -413,13 +525,13 @@ def upload_file():
             if path and os.path.exists(path):
                 _schedule_delete(path, delay_seconds=1)
         logger.info("Upload validation failed: %s", e)
-        return {"error": str(e)}, 400
-    except Exception as e:
+        return {"error": "檔案格式或內容不符合要求，請檢查後再試"}, 400
+    except Exception:
         for path in (easytest_path, myet_path, student_list_path, result_path):
             if path and os.path.exists(path):
                 _schedule_delete(path, delay_seconds=1)
         logger.exception("Upload processing failed")
-        return {"error": f"處理檔案時發生錯誤: {str(e)}"}, 500
+        return {"error": "系統處理失敗，請稍後再試"}, 500
 
 if __name__ == '__main__':
     cleanup_thread = Thread(target=cleanup_task, daemon=True)

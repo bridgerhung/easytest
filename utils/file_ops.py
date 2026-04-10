@@ -3,10 +3,20 @@ import time
 
 def delete_old_files(folder, age_in_seconds):
     now = time.time()
-    for filename in os.listdir(folder):
-        file_path = os.path.join(folder, filename)
-        if os.path.isfile(file_path):
-            file_age = now - os.path.getmtime(file_path)
+    try:
+        entries = list(os.scandir(folder))
+    except OSError:
+        return
+
+    for entry in entries:
+        try:
+            # Never follow symlinks during cleanup.
+            if entry.is_symlink() or not entry.is_file(follow_symlinks=False):
+                continue
+
+            stat_info = entry.stat(follow_symlinks=False)
+            file_age = now - stat_info.st_mtime
             if file_age > age_in_seconds:
-                os.remove(file_path)
-                print(f"Deleted: {file_path}")
+                os.unlink(entry.path)
+        except OSError:
+            continue

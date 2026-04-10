@@ -62,6 +62,7 @@
           </p>
         </div>
         <form class="upload-form" method="post" enctype="multipart/form-data" data-show-captcha="{{ 'true' if show_captcha else 'false' }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
           <div class="file-upload-container">
             <div class="file-upload-block">
               <label for="easytest-file" class="file-label">
